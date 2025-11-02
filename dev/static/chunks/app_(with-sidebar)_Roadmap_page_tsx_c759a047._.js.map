@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/phuonghuupham/Documents/GitHub/Pathfinity/app/%28with-sidebar%29/Roadmap/page.tsx"],"sourcesContent":["'use client';\n\nexport default function RoadmapPage() {\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-white-50\">\n      <h1 className=\"text-6xl font-bold text-gray-900\">Roadmap</h1>\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;AAAA;;AAEe,SAAS;IACtB,qBACE,6LAAC;QAAI,WAAU;kBACb,cAAA,6LAAC;YAAG,WAAU;sBAAmC;;;;;;;;;;;AAGvD;KANwB","debugId":null}}]
+}
