@@ -4,6 +4,7 @@ import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import * as path from 'path';
 import { source, embedding } from '../../app/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 
@@ -59,6 +60,24 @@ Additional Info: ${course.metadata}`;
 }
 
 /**
+ * Normalize a file path to a campus name.
+ * - strips directory and extension
+ * - replaces non-alphanumeric separators with single spaces
+ * - title-cases each word
+ * Example: "app/db/data/kauai_courses.json" -> "Kauai Courses"
+ */
+function normalizeCampusFromPath(filePath: string): string {
+  if (!filePath) return 'Unknown Campus';
+  const base = path.basename(filePath, path.extname(filePath));
+  const spaced = base.replace(/[^A-Za-z0-9]+/g, ' ').trim();
+  if (!spaced) return 'Unknown Campus';
+  return spaced
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
  * Generate embeddings using OpenAI with batch support
  */
 async function generateEmbeddings(texts: string[]): Promise<number[][]> {
@@ -78,7 +97,8 @@ async function processBatch(
   courses: CourseData[],
   sourceId: string,
   batchSize: number = 20,
-  skipExisting: boolean = true
+  skipExisting: boolean = true,
+  campusName?: string
 ): Promise<{ processed: number; skipped: number }> {
   let totalProcessed = 0;
   let totalSkipped = 0;
@@ -130,8 +150,8 @@ async function processBatch(
       const contents = toProcess.map(item => item.content);
       const embeddings = await generateEmbeddings(contents);
       
-      // MANUALLY CHANGE CAMPUS WHEN INGESTING
-      const campus = 'Pacific Center for Advanced Technology Training';
+  // Use campusName passed from caller (normalized from filename). Fallback to 'Unknown Campus'.
+  const campus = campusName ?? 'Unknown Campus';
 
       // Prepare data for insertion
       const embeddingData: any[] = [];
@@ -227,8 +247,11 @@ async function ingestCourseData(
       console.log(`Using existing source record: ${sourceId}`);
     }
 
-    // Process courses in batches
-    const { processed, skipped } = await processBatch(courses, sourceId, batchSize, skipExisting);
+  // Derive campus name from filename and process courses in batches
+  const campusName = normalizeCampusFromPath(jsonFilePath);
+  console.log(`Detected campus from filename: "${campusName}"`);
+  // Process courses in batches, passing the derived campus name
+  const { processed, skipped } = await processBatch(courses, sourceId, batchSize, skipExisting, campusName);
 
     console.log(`\nIngestion complete!`);
     console.log(`   Total courses: ${courses.length}`);

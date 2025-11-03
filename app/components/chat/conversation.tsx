@@ -23,8 +23,9 @@ export function Conversation({ messages, status, className }: Props) {
       <ConversationContent>
         {messages.length === 0 ? (
             <ConversationEmptyState
-                title="No messages yet"
-                description="Start a conversation to see messages here"
+                title="Welcome to Pathfinity!"
+                description="Are you exploring, deciding a major, or preparing for a career? I'll help you find the best pathway to reach your goals."
+                className="text-left"
             />
         ) : (
           messages.map((message) => (

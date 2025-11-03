@@ -7,9 +7,11 @@ import {
   vector,
   index,
   jsonb,
+  integer,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 
-/* User / Auth */
+/* User / Auth tables */
 export const user = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -57,6 +59,41 @@ export const verification = pgTable("verifications", {
   updatedAt: timestamp("updated_at").notNull(),
 });
 
+/* Chat conversation tables */
+export const role = pgEnum('role', ['user', 'ai']);
+export const status = pgEnum('status', ['in_progress', 'completed', 'cancelled', 'failed']);
+
+export const conversation = pgTable("conversations", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title"),
+  model: text("model"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastMessageAt: timestamp("last_message_at"),
+});
+
+export const message = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  conversationId: text("conversation_id").notNull().references(() => conversation.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => user.id),
+  role: role("role").notNull(),
+  content: text("content"),
+  contentMime: text("content_mime"),
+  status: status("status").notNull().default("in_progress"),
+  parentMessageId: integer("parent_message_id"),
+  tokens: integer("tokens"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+},
+(table) => [
+  index("messages_conversation_idx").on(table.conversationId),
+  index("messages_conversation_created_at_idx").on(table.conversationId, table.createdAt),
+]
+);
+
 /* RAG (Retrieval-Augmented Generation) tables */
 
 // Sources represent the origin of documents (files, URLs, datasets)
@@ -88,15 +125,3 @@ export const embedding = pgTable("embeddings", {
     index("embedding_vector_idx").using("ivfflat", table.embedding.op("vector_cosine_ops")),
   ]
 );
-
-/* Degree Pathways */
-// Store degree pathway information with all course sequences and recommendations
-export const pathway = pgTable("pathways", {
-  id: serial("id").primaryKey(),
-  programName: text("program_name").notNull().unique(),
-  institution: text("institution").notNull(),
-  totalCredits: text("total_credits").notNull(),
-  pathwayData: jsonb("pathway_data").notNull(), // Store the full pathway JSON structure
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});

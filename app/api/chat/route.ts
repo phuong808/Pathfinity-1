@@ -294,6 +294,13 @@ For listing/browsing courses:
 - If many results, suggest being more specific
 - IMPORTANT: Only call this tool ONCE per response - do not repeat calls
 
+For listing universities / campuses (treat every campus as a university):
+- Users may ask to "list universities", "what universities are included", or "which campuses are available". These requests are course-related and allowed.
+- Treat every distinct campus value and every distinct department name (metadata->>'dept_name') as a university entry. Normalize common abbreviations and alternate names (for example, treat "PCATT" and "Pacific Center for Advanced Technology Training" as the same university). Prefer the longer, more descriptive name when both appear.
+- Preferred method: call searchKnowledgeBase once with queries that surface campus and department fields (examples: "campus", "dept_name", "department", "PCATT"). Inspect returned results for fields such as result.content.campus, result.content.dept_name, result.source, and result.course_code. Extract and normalize distinct campus and dept_name values and present a concise numbered list of the unique universities found. When possible, include the number of courses found for each (for example: "1) Kauai Community College — 42 courses").
+- Fallback: if searchKnowledgeBase does not return enough coverage, call listCourses once with a larger limit (for example, limit=1000) and aggregate unique values from the campus field and the metadata->>'dept_name' field across results to build and normalize the campus/university list.
+- IMPORTANT: Make only one tool call for the listing action in a single response (either searchKnowledgeBase or listCourses) and avoid calling the same tool multiple times.
+
 For specific course searches:
 - Use searchKnowledgeBase for topic-based searches, not exact course codes
 - Examples: "AWS courses", "courses about networking", "cybersecurity training"
@@ -326,7 +333,8 @@ RULES:
 - Cite sources with [1], [2] when providing course information from searchKnowledgeBase
 - Keep responses concise (2-5 sentences typically)
 - Guide users toward more specific queries if their question is too broad
-- When credits/units are not available, clearly state "Not specified" rather than saying you can't find the info`,
+- When credits/units are not available, clearly state "Not specified" rather than saying you can't find the info
+- Prefer using bullted style lists when tasked with listing things.`,
             stopWhen: stepCountIs(2),
         });
 
