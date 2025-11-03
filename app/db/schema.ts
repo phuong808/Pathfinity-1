@@ -88,3 +88,15 @@ export const embedding = pgTable("embeddings", {
     index("embedding_vector_idx").using("ivfflat", table.embedding.op("vector_cosine_ops")),
   ]
 );
+
+/* Degree Pathways */
+// Store degree pathway information with all course sequences and recommendations
+export const pathway = pgTable("pathways", {
+  id: serial("id").primaryKey(),
+  programName: text("program_name").notNull().unique(),
+  institution: text("institution").notNull(),
+  totalCredits: text("total_credits").notNull(),
+  pathwayData: jsonb("pathway_data").notNull(), // Store the full pathway JSON structure
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

@@ -99,3 +99,34 @@
   min-width: 200px;
   font-weight: bold;
 }
+
+/* New Semester Node Styles */
+.semesterNode {
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+/* Popup for editing */
+.popup {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+}
+
+/* Legend color boxes */
+.legendCourse {
+  background-color: #3498db;
+}
+
+.legendActivity {
+  background-color: #e67e22;
+}
+
+.legendInternship {
+  background-color: #9b59b6;
+}
+
+.legendMilestone {
+  background-color: #f39c12;
+}
