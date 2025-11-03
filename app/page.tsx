@@ -8,7 +8,7 @@ export default async function Home() {
   // If the user is authenticated, send them to the dashboard (which lives
   // under the `(with-sidebar)` route group so it includes the sidebar).
   if (session) {
-    redirect('/Home');
+    redirect('/Chat');
   }
 
   // Otherwise render the public landing page

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Infinity, Home, Map, SquareUser, GraduationCap, Briefcase, User } from "lucide-react"
+import { Infinity, MessagesSquare, Map, GraduationCap, Briefcase, User, Plus } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 
 import { NavMain } from "./nav-main"
@@ -25,9 +25,9 @@ const data = {
     },
     navMain: [
         {
-            title: "Home",
+            title: "Chat",
             url: "/",
-            icon: Home,
+            icon: MessagesSquare,
         },
         {
             title: "Roadmap",
