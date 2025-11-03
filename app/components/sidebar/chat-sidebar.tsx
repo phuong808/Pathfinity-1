@@ -35,11 +35,6 @@ const data = {
             icon: Map,
         },
         {
-            title: "Profiles",
-            url: "/Profiles",
-            icon: SquareUser,
-        },
-        {
             title: "Majors",
             url: "/Majors",
             icon: GraduationCap,

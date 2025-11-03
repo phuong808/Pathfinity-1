@@ -109,7 +109,7 @@ interface StudentProfile {
   supportSystem: string[];
 }
 
-export default function ProfilesPage() {
+export default function DashboardPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('personal');
   
