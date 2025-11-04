@@ -166,7 +166,7 @@ export function ChatHistory({
                     className={cn("max-h-[400px] overflow-y-auto overflow-x-hidden", !open && "hidden")}
                 >
                     {chats.length === 0 ? (
-                        <div className="px-2 py-4 text-sm text-muted-foreground">No chats yet</div>
+                        <div className="px-2 py-4 text-sm text-muted-foreground">No conversations yet</div>
                     ) : (
                         chats.map((chat) => {
                             const isActive = pathname === `/Chat/${chat.id}`;

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, UIMessage } from "ai";
+import { useRouter } from "next/navigation";
 import Conversation from "@/app/components/chat/conversation";
 import PromptBox from "@/app/components/chat/prompt-box";
 
@@ -13,23 +14,26 @@ const models = [
 interface ChatClientProps {
   id: string;
   initialMessages: UIMessage[];
+  userId?: string;
 }
 
-export default function ChatClient({ id, initialMessages }: ChatClientProps) {
+export default function ChatClient({ id, initialMessages, userId }: ChatClientProps) {
   const [model, setModel] = useState(models[0].id);
   const [input, setInput] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState(id);
+  const router = useRouter();
   
   const { messages, sendMessage, status, setMessages } = useChat({
-    id,
+    id: currentChatId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      // Only send the last message to reduce bandwidth
       prepareSendMessagesRequest({ messages, id }) {
         return { 
           body: { 
             message: messages[messages.length - 1], 
-            id 
+            id: currentChatId,
+            userId: userId,
           } 
         };
       },
@@ -48,15 +52,47 @@ export default function ChatClient({ id, initialMessages }: ChatClientProps) {
     }
   }, [initialMessages, setMessages, messages.length]);
 
-  const handleSubmit = (message: any) => {
+  const handleSubmit = async (message: any) => {
     if (!message.text) {
       return;
     }
-    sendMessage({
-      text: message.text,
-    });
-    setInput("");
+    
+    // If this is a new chat, create it first then redirect
+    if (currentChatId === "new") {
+      try {
+        // Create the chat via server action
+        const response = await fetch('/api/chat/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        });
+        const { chatId } = await response.json();
+        
+        // Redirect to the new chat with the message as a query param
+        router.push(`/Chat/${chatId}?initialMessage=${encodeURIComponent(message.text)}`);
+      } catch (error) {
+        console.error('Failed to create chat:', error);
+      }
+    } else {
+      sendMessage({
+        text: message.text,
+      });
+      setInput("");
+    }
   };
+  
+  // Check for initial message in URL params and send it
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentChatId !== "new") {
+      const params = new URLSearchParams(window.location.search);
+      const initialMessage = params.get('initialMessage');
+      if (initialMessage && messages.length === 0) {
+        sendMessage({ text: initialMessage });
+        // Clean up URL
+        window.history.replaceState({}, '', `/Chat/${currentChatId}`);
+      }
+    }
+  }, [currentChatId, messages.length, sendMessage]);
 
   if (!mounted) {
     return (
