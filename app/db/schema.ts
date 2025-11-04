@@ -7,9 +7,11 @@ import {
   vector,
   index,
   jsonb,
+  integer,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 
-/* User / Auth */
+/* User / Auth tables */
 export const user = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -69,7 +71,7 @@ export const source = pgTable("sources", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Embeddings: store only the embeddings and minimal metadata, linked to a source.
+// Store only the embeddings and minimal metadata, linked to a source.
 export const embedding = pgTable("embeddings", {
   id: serial("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => source.id, { onDelete: "cascade" }),
@@ -89,14 +91,22 @@ export const embedding = pgTable("embeddings", {
   ]
 );
 
-/* Degree Pathways */
-// Store degree pathway information with all course sequences and recommendations
-export const pathway = pgTable("pathways", {
-  id: serial("id").primaryKey(),
-  programName: text("program_name").notNull().unique(),
-  institution: text("institution").notNull(),
-  totalCredits: text("total_credits").notNull(),
-  pathwayData: jsonb("pathway_data").notNull(), // Store the full pathway JSON structure
+/* Chat / Message Persistence */
+
+// Store chat sessions with user reference
+export const chat = pgTable("chats", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title"), // optional, can be generated from first message
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Store individual messages in UIMessage format from AI SDK
+export const message = pgTable("messages", {
+  id: text("id").primaryKey(),
+  chatId: text("chat_id").notNull().references(() => chat.id, { onDelete: "cascade" }),
+  role: text("role").notNull(), // 'user' | 'assistant'
+  content: jsonb("content").notNull(), // store complete UIMessage parts array
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

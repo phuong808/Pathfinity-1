@@ -1,11 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Infinity, Home, Map, SquareUser, GraduationCap, Briefcase, User } from "lucide-react"
+import { Infinity, MessagesSquare, Map, GraduationCap, Briefcase, User, Plus } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
-
+import { useRouter } from "next/navigation"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
+import { ChatHistory } from "./chat-history"
 import {
     Sidebar,
     SidebarContent,
@@ -14,7 +15,8 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarTrigger
+    SidebarTrigger,
+    useSidebar,
 } from "../ui/sidebar"
 
 const data = {
@@ -25,9 +27,9 @@ const data = {
     },
     navMain: [
         {
-            title: "Home",
-            url: "/",
-            icon: Home,
+            title: "Chat",
+            url: "/Chat",
+            icon: MessagesSquare,
         },
         {
             title: "Roadmap",
@@ -55,7 +57,10 @@ const data = {
 
 
 export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { data: session, isPending } = useSession()
+    const { data: session } = useSession()
+    const router = useRouter()
+    const { state, isMobile } = useSidebar()
+
     const user = session?.user
         ? {
             name: session.user.name,
@@ -66,31 +71,39 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
 
     return (
         <>
-        <Sidebar collapsible="icon" {...props}>
-        <SidebarHeader className="position-absolute top-0 left-2">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className="data-[slot=sidebar-menu-button]:!p-1.5"
-              >
-                <a href="/">
-                  <Infinity className="h-5 w-5" />
-                  <span className="text-base font-semibold">Pathfinity</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
-        <SidebarContent>
-          <NavMain items={data.navMain} />
-        </SidebarContent>
-        <SidebarFooter>
-          <NavUser user={user} />
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarTrigger className="position-fixed top-0 p-2" />
-    </>
+          <Sidebar collapsible="icon" {...props}>
+            <SidebarHeader className="position-absolute top-0 left-2">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="data-[slot=sidebar-menu-button]:!p-1.5"
+                  >
+                    <a href="/">
+                      <Infinity className="h-5 w-5" />
+                      <span className="text-base font-semibold">Pathfinity</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarHeader>
+
+            <SidebarContent>
+              <NavMain items={data.navMain} />
+              <ChatHistory userId={session?.user?.id} />
+            </SidebarContent>
+
+            <SidebarFooter>
+              <NavUser user={user} />
+            </SidebarFooter>
+          </Sidebar>
+
+          <SidebarTrigger
+            className={`fixed top-0 z-10 transition-[left] duration-200 ease-in-out ${
+              isMobile ? "top-4 left-4" : state === "collapsed" ? "left-[3rem]" : "left-[var(--sidebar-width)]"
+            }`}
+          />
+        </>
 
     )
 }
