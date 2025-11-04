@@ -139,16 +139,20 @@ export async function saveChat({
 
 /**
  * Get all chats for a user
- * @param userId - The user ID (optional for anonymous users)
+ * @param userId - The user ID (required)
  * @returns Array of chat objects with id, title, and timestamps
  */
-export async function getChats(userId?: string): Promise<{
+export async function getChats(userId: string): Promise<{
   id: string;
   title: string | null;
   createdAt: Date;
   updatedAt: Date;
 }[]> {
-  const query = db
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    throw new Error('getChats requires a valid userId');
+  }
+
+  const chats = await db
     .select({
       id: chat.id,
       title: chat.title,
@@ -156,9 +160,8 @@ export async function getChats(userId?: string): Promise<{
       updatedAt: chat.updatedAt,
     })
     .from(chat)
+    .where(eq(chat.userId, userId.trim()))
     .orderBy(desc(chat.updatedAt));
-
-  const chats = userId ? await query.where(eq(chat.userId, userId)) : await query;
   
   return chats;
 }
