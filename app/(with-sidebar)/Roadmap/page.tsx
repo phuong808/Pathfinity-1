@@ -463,6 +463,8 @@ export default function RoadmapPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [dragDepth, setDragDepth] = useState(0);
 
   // Load available pathways on mount
   useEffect(() => {
@@ -630,8 +632,91 @@ export default function RoadmapPage() {
     }
   }, [setNodes, selectedNode]);
 
+  // Helper: parse a JSON string into PathwayData shape
+  const parsePathwayJson = useCallback((text: string): PathwayData => {
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON');
+    if (Array.isArray((parsed as any).years)) return parsed as PathwayData;
+    if ((parsed as any).pathwayData && Array.isArray((parsed as any).pathwayData.years)) return (parsed as any).pathwayData as PathwayData;
+    if (Array.isArray(parsed) && parsed.length > 0 && Array.isArray(parsed[0].years)) return parsed[0] as PathwayData;
+    throw new Error('JSON does not look like a PathwayData object');
+  }, []);
+
+  // Drag-and-drop JSON import
+  const onDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth((d) => d + 1);
+    setIsDraggingOver(true);
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth((d) => {
+      const next = d - 1;
+      if (next <= 0) setIsDraggingOver(false);
+      return next;
+    });
+  }, []);
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Explicitly show as copy for files
+    e.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const onDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    setDragDepth(0);
+    try {
+      const items = e.dataTransfer.items;
+      if (!items || items.length === 0) return;
+      const fileItem = Array.from(items).find((it) => it.kind === 'file');
+      if (!fileItem) return;
+      const file = fileItem.getAsFile();
+      if (!file) return;
+      const text = await file.text();
+      const pd = parsePathwayJson(text);
+      const { nodes: newNodes, edges: newEdges } = pathwayToNodesAndEdges(pd);
+      setNodes(newNodes);
+      setEdges(newEdges);
+      setError(null);
+    } catch (err: any) {
+      console.error('Drop import error:', err);
+      setError(err?.message || 'Failed to import pathway JSON');
+    }
+  }, [parsePathwayJson, setNodes, setEdges]);
+
+  // Auto-import pathway JSON handed off from chat via localStorage
+  useEffect(() => {
+    try {
+      const draft = typeof window !== 'undefined' ? localStorage.getItem('pathfinity.roadmapDraft') : null;
+      if (draft && draft.trim()) {
+        const pd = parsePathwayJson(draft);
+        const { nodes: newNodes, edges: newEdges } = pathwayToNodesAndEdges(pd);
+        setNodes(newNodes);
+        setEdges(newEdges);
+        localStorage.removeItem('pathfinity.roadmapDraft');
+        setError(null);
+      }
+    } catch (err: any) {
+      console.error('Auto-import error:', err);
+      setError(err?.message || 'Failed to import pathway from chat');
+    }
+  }, [parsePathwayJson, setNodes, setEdges]);
+
   return (
-    <div className={`h-screen w-full flex flex-col ${styles.container}`}>
+    <div
+      className={`h-screen w-full flex flex-col ${styles.container}`}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       {/* Header */}
       <div className={`bg-white shadow-md border-b-4 ${styles.header}`}>
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -703,8 +788,9 @@ export default function RoadmapPage() {
                 className={`px-4 py-2 rounded-lg font-medium text-sm border-2 transition-all duration-200 hover:shadow-lg ${styles.saveButton}`}
                 type="button"
                 disabled={isLoading}
+                title="Roadmap saving will be available soon"
               >
-                💾 Save
+                � Save (coming soon)
               </button>
             </div>
           </div>
@@ -751,6 +837,14 @@ export default function RoadmapPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex relative">
+        {isDraggingOver && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 pointer-events-none">
+            <div className="rounded-xl border-4 border-dashed border-white/80 bg-white/90 p-6 text-center shadow-xl">
+              <div className="text-lg font-semibold text-gray-800">Drop your pathway JSON here to visualize</div>
+              <div className="text-xs text-gray-600 mt-1">We support PathwayData or {`{ pathwayData: ... }`} shapes</div>
+            </div>
+          </div>
+        )}
         {/* Floating Popup for Node Editing */}
         {selectedNode && !selectedEdge && (
           <div 
@@ -802,7 +896,7 @@ export default function RoadmapPage() {
                   </label>
                   <select
                     id="node-bg-color"
-                    value={selectedNode.style?.backgroundColor || MANOA_COLORS.course}
+                    value={(selectedNode.style as any)?.backgroundColor || MANOA_COLORS.course}
                     onChange={(e) => updateNodeStyle(selectedNode.id, { backgroundColor: e.target.value })}
                     className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${styles.input}`}
                   >
@@ -846,7 +940,7 @@ export default function RoadmapPage() {
                   </label>
                   <select
                     id="edge-color"
-                    value={selectedEdge.style?.stroke || MANOA_COLORS.primary}
+                    value={(selectedEdge.style as any)?.stroke || MANOA_COLORS.primary}
                     onChange={(e) => updateEdgeStyle(selectedEdge.id, 'stroke', e.target.value)}
                     className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${styles.input}`}
                   >
@@ -859,14 +953,14 @@ export default function RoadmapPage() {
                 </div>
                 <div>
                   <label htmlFor="edge-width" className="block text-xs font-medium text-gray-700 mb-1">
-                    Width: {selectedEdge.style?.strokeWidth || 2}px
+                    Width: {(selectedEdge.style as any)?.strokeWidth || 2}px
                   </label>
                   <input
                     id="edge-width"
                     type="range"
                     min="1"
                     max="6"
-                    value={selectedEdge.style?.strokeWidth || 2}
+                    value={(selectedEdge.style as any)?.strokeWidth || 2}
                     onChange={(e) => updateEdgeStyle(selectedEdge.id, 'strokeWidth', parseInt(e.target.value))}
                     className="w-full"
                   />

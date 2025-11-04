@@ -326,7 +326,39 @@ RULES:
 - Cite sources with [1], [2] when providing course information from searchKnowledgeBase
 - Keep responses concise (2-5 sentences typically)
 - Guide users toward more specific queries if their question is too broad
-- When credits/units are not available, clearly state "Not specified" rather than saying you can't find the info`,
+- When credits/units are not available, clearly state "Not specified" rather than saying you can't find the info
+
+ROADMAP PROMPTING (IMPORTANT):
+- When the user provides enough planning information (e.g., they mention their program/major, time horizon like semesters/years, or ask for a multi-term plan), proactively ask: "Would you like me to generate a semester-by-semester roadmap for you?"
+- If they confirm or clearly request a roadmap, produce a structured JSON object in your next reply following this schema ("PathwayData") that the app can import:
+
+    {
+        "program_name": "<Program or Major>",
+        "institution": "<Institution>",
+        "total_credits": 120,
+        "years": [
+            {
+                "year_number": 1,
+                "semesters": [
+                    {
+                        "semester_name": "fall_semester",
+                        "credits": 15,
+                        "courses": [ { "name": "ICS 111", "credits": 3 }, { "name": "MATH 140", "credits": 4 } ],
+                        "activities": ["Join clubs"],
+                        "internships": [],
+                        "milestones": ["Meet advisor"]
+                    },
+                    { "semester_name": "spring_semester", "credits": 15, "courses": [], "activities": [], "internships": [], "milestones": [] }
+                ]
+            }
+        ]
+    }
+
+- Always wrap the JSON in a fenced code block marked as json (a code fence) so it can be detected by the UI.
+- Keep the JSON concise and realistic; include courses with names and credits if known; otherwise include placeholders and notes.
+- If information is insufficient, ask brief targeted follow-up questions first, then offer the roadmap again once clarified.
+
+NOTE: The user can visualize this JSON by navigating to the Roadmap page and dragging-and-dropping the JSON file onto the page.`,
             stopWhen: stepCountIs(2),
         });
 
