@@ -8,7 +8,9 @@ import {
     tool,
     InferUITools,
     UIDataTypes,
-    stepCountIs
+    stepCountIs,
+    createIdGenerator,
+    validateUIMessages,
 } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
@@ -16,6 +18,7 @@ import { semanticSearch } from '@/lib/semantic-search';
 import { db } from '@/app/db/index';
 import { embedding as e } from '@/app/db/schema';
 import { sql } from 'drizzle-orm';
+import { loadChat, saveChat } from '@/app/db/actions';
 
 const tools = {
     getCourseByCode: tool({
@@ -267,7 +270,19 @@ export type ChatMessage = UIMessage<never, UIDataTypes, ChatTools>;
 
 export async function POST(req: Request) {
     try {
-        const { messages }: { messages: ChatMessage[] } = await req.json();
+        const { message, id }: { message?: ChatMessage; id: string } = await req.json();
+
+        // Load previous messages from database
+        const previousMessages = await loadChat(id);
+
+        // Append new message to previous messages if provided
+        const allMessages = message ? [...previousMessages, message] : previousMessages;
+
+        // Validate messages against tools to ensure consistency
+        const messages = await validateUIMessages({
+            messages: allMessages,
+            tools: tools as any,
+        });
 
         const result = streamText({
             model: openai('gpt-4.1-mini'),
@@ -338,7 +353,18 @@ RULES:
             stopWhen: stepCountIs(2),
         });
 
-        return result.toUIMessageStreamResponse();
+        return result.toUIMessageStreamResponse({
+            originalMessages: messages,
+            // Generate server-side message IDs for persistence
+            generateMessageId: createIdGenerator({
+                prefix: 'msg',
+                size: 16,
+            }),
+            onFinish: async ({ messages }) => {
+                // Save messages to database
+                await saveChat({ chatId: id, messages });
+            },
+        });
     } catch (error) {
         console.error('Error streaming chat completion:', error);
         return new Response('Failed to stream chat completion', { status: 500 });

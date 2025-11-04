@@ -1,6 +1,6 @@
 {
-  "id": "2bf10b87-5520-43dc-a6fb-5f00460cfd02",
-  "prevId": "6f9854f5-7b7c-4205-b35a-202dbc0febd1",
+  "id": "eb1b92e1-1293-4608-88ec-5c21cd967617",
+  "prevId": "2bf10b87-5520-43dc-a6fb-5f00460cfd02",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -125,7 +125,7 @@
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "title": {
           "name": "title",
