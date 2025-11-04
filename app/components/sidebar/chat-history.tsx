@@ -43,25 +43,32 @@ export function ChatHistory({
     // Load chats on mount
     React.useEffect(() => {
         loadChats();
-    }, []);
+    }, [userId]);
 
     // Refresh chats when pathname changes (new chat or switching chats)
     React.useEffect(() => {
         loadChats();
-    }, [pathname]);
+    }, [pathname, userId]);
 
     // Poll for updates every 5 seconds when on a chat page
     React.useEffect(() => {
-        if (pathname.startsWith("/Chat/")) {
+        if (pathname.startsWith("/Chat/") && userId) {
             const interval = setInterval(() => {
                 loadChats();
             }, 5000);
 
             return () => clearInterval(interval);
         }
-    }, [pathname]);
+    }, [pathname, userId]);
 
     const loadChats = async () => {
+        // Don't load chats if userId is not available
+        if (!userId) {
+            setIsLoading(false);
+            setChats([]);
+            return;
+        }
+
         try {
             const fetchedChats = await getChats(userId);
             setChats(fetchedChats);
