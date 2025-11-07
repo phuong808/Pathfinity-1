@@ -1,132 +1,336 @@
-/* UH Manoa Green Theme for Roadmap */
+/* Timeline Roadmap Styles */
 .container {
-  background-color: #F0F8F0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+  overflow: hidden;
 }
 
 .header {
-  border-bottom-color: #024731;
+  background-color: white;
+  border-bottom: 2px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
 }
 
 .headerTitle {
-  color: #024731;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
 }
 
-.addButton {
-  background-color: #0F7B0F;
-  border-color: #024731;
+.timelineContainer {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background-color: white;
 }
 
-.addButton:hover {
-  transform: scale(1.05);
+.timelineGrid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
 }
 
-.saveButton {
-  color: #024731;
-  border-color: #024731;
-  background-color: #FFFFFF;
+/* Header row with Timeline + Categories */
+.headerRow {
+  display: flex;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  border-bottom: 2px solid #e0e0e0;
+  z-index: 5;
+  min-height: 60px;
+  max-height: 60px;
+  flex-shrink: 0;
 }
 
-.sidebar {
-  border-right-color: #024731;
+.timelineHeaderCell {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  border-right: 2px solid #e0e0e0;
+  background-color: #fafafa;
+  font-weight: 600;
+  text-align: center;
+  flex-shrink: 0;
 }
 
-.sidebarTitle {
-  color: #024731;
+/* Category headers - now HORIZONTAL across the top */
+.categoryHeaders {
+  display: flex;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  border-bottom: 2px solid #e0e0e0;
+  z-index: 5;
+  min-height: 60px;
+  max-height: 60px;
+  flex-shrink: 0;
+}
+
+.categoryHeader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e0e0e0;
+  padding: 12px 8px;
+  position: relative;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.categoryHeaderLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.contentRows {
+  position: relative;
+  min-height: 300px;
+  flex: 1;
+}
+
+.contentRow {
+  min-height: 120px;
+  position: relative;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Timeline cell in each row */
+.timelineCell {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  border-right: 2px solid #e0e0e0;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #333;
+  text-align: center;
+  flex-shrink: 0;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.timelineCell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.timelineLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.timelineYear {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e40af;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.timelineSemester {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.contentColumn {
+  flex: 1;
+  position: relative;
+  border-right: 1px solid #f0f0f0;
+  padding: 8px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.itemCard {
+  background: white;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 6px solid;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.itemCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.03) 100%);
+  pointer-events: none;
+}
+
+.itemCard:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.itemCardSelected {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  transform: translateY(-3px) scale(1.02);
+  outline: 3px solid #4CAF50;
+  z-index: 3;
+}
+
+.itemCardLabel {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+}
+
+.itemCardDetails {
+  font-size: 0.75rem;
+  color: #4a5568;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 1;
+  font-weight: 500;
+}
+
+.editPanel {
+  position: fixed;
+  right: 20px;
+  top: 100px;
+  width: 320px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-height: calc(100vh - 140px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editPanelHeader {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fafafa;
+}
+
+.editPanelContent {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #e0e0e0;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+}
+
+.formRow .formGroup {
+  flex: 1;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input:focus,
 .textarea:focus {
-  --tw-ring-color: #0F7B0F;
-  --tw-ring-opacity: 0.5;
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
-.doneButton {
-  background-color: #0F7B0F;
-}
-
-.controls {
-  background-color: #FFFFFF;
-  border: 2px solid #024731;
-  border-radius: 8px;
-}
-
-.minimap {
-  background-color: #FFFFFF;
-  border: 2px solid #024731;
-  border-radius: 8px;
+.textarea {
+  resize: vertical;
+  font-family: inherit;
 }
 
 .footer {
-  border-top-color: #024731;
-}
-
-.footerText {
-  color: #1B4332;
-}
-
-/* Node Styles */
-.nodeBase {
-  border-radius: 12px;
-  padding: 10px;
-  min-width: 180px;
-  border-width: 2px;
-}
-
-.inputNode {
-  background-color: #024731;
-  color: #FFFFFF;
-  border-color: #0F7B0F;
-  min-width: 200px;
-  font-weight: bold;
-}
-
-.defaultNode {
-  background-color: #0F7B0F;
-  color: #FFFFFF;
-  border-color: #3E8B3E;
-}
-
-.lightNode {
-  background-color: #3E8B3E;
-  color: #FFFFFF;
-  border-color: #228B22;
-}
-
-.outputNode {
-  background-color: #228B22;
-  color: #FFFFFF;
-  border-color: #024731;
-  min-width: 200px;
-  font-weight: bold;
-}
-
-/* New Semester Node Styles */
-.semesterNode {
-  white-space: pre-wrap;
-  line-height: 1.4;
-}
-
-/* Popup for editing */
-.popup {
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 320px;
-}
-
-/* Legend color boxes */
-.legendCourse {
-  background-color: #3498db;
-}
-
-.legendActivity {
-  background-color: #e67e22;
-}
-
-.legendInternship {
-  background-color: #9b59b6;
-}
-
-.legendMilestone {
-  background-color: #f39c12;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+  padding: 12px;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
 }
