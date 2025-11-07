@@ -18,6 +18,7 @@ import {
 } from "@/app/components/ui/popover";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCourseDetails, type CourseDetails, extractPrerequisites, extractGradeOption, extractMajorRestrictions } from "@/lib/course-mapper";
 
 // Semester and course category colors
 const SEMESTER_COLORS: Record<string, string> = {
@@ -134,6 +135,7 @@ interface TimelineItem {
   endYear: number;
   endMonth: number; // 0-11
   description?: string;
+  courseDetails?: CourseDetails; // Added course details from manoa_courses.json
 }
 
 interface PathwayData {
@@ -220,6 +222,9 @@ function pathwayToTimeline(pathwayData: PathwayData): { items: TimelineItem[], c
 
       // Add each course to the "Courses" category
       semester.courses.forEach((course) => {
+        // Get detailed course information from manoa_courses.json
+        const courseDetails = getCourseDetails(course.name);
+        
         items.push({
           id: `${itemId++}`,
           category: 'Courses',
@@ -229,6 +234,7 @@ function pathwayToTimeline(pathwayData: PathwayData): { items: TimelineItem[], c
           endYear: actualYear,
           endMonth,
           description: `${course.credits} credits • ${semesterLabel}`,
+          courseDetails, // Add the detailed course information
         });
       });
 
@@ -487,7 +493,9 @@ export default function RoadmapPage() {
       {selectedItem && (
         <div className={styles.editPanel}>
           <div className={styles.editPanelHeader}>
-            <h3 className="font-bold">Item Details</h3>
+            <h3 className="font-bold">
+              {selectedItem.category === 'Courses' && selectedItem.courseDetails ? 'Course Details' : 'Item Details'}
+            </h3>
             <button
               onClick={() => setSelectedItem(null)}
               className={styles.closeButton}
@@ -501,25 +509,105 @@ export default function RoadmapPage() {
               <label className="text-gray-700 font-semibold">Type</label>
               <p className="text-sm text-gray-600 mt-1">{selectedItem.category}</p>
             </div>
+            
             <div className={styles.formGroup}>
-              <label className="text-gray-700 font-semibold">Name</label>
-              <p className="text-sm text-gray-600 mt-1">{selectedItem.name}</p>
+              <label className="text-gray-700 font-semibold">
+                {selectedItem.category === 'Courses' ? 'Course Code' : 'Name'}
+              </label>
+              <p className="text-sm text-gray-600 mt-1 font-medium">{selectedItem.name}</p>
             </div>
-            <div className={styles.formGroup}>
-              <label className="text-gray-700 font-semibold">Details</label>
-              <p className="text-sm text-gray-600 mt-1">{selectedItem.description}</p>
-            </div>
+
+            {/* Show detailed course information if available */}
+            {selectedItem.category === 'Courses' && selectedItem.courseDetails ? (
+              <>
+                <div className={styles.formGroup}>
+                  <label className="text-gray-700 font-semibold">Course Title</label>
+                  <p className="text-sm text-gray-600 mt-1">{selectedItem.courseDetails.course_title}</p>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className="text-gray-700 font-semibold">Description</label>
+                  <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                    {selectedItem.courseDetails.course_desc}
+                  </p>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className="text-gray-700 font-semibold">Department</label>
+                  <p className="text-sm text-gray-600 mt-1">{selectedItem.courseDetails.dept_name}</p>
+                </div>
+
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label className="text-gray-700 font-semibold">Credits</label>
+                    <p className="text-sm text-gray-600 mt-1">{selectedItem.courseDetails.num_units}</p>
+                  </div>
+                </div>
+
+                {selectedItem.courseDetails.metadata && (
+                  <>
+                    <div className={styles.formGroup}>
+                      <label className="text-gray-700 font-semibold">Prerequisites</label>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {extractPrerequisites(selectedItem.courseDetails.metadata)}
+                      </p>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className="text-gray-700 font-semibold">Grade Option</label>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {extractGradeOption(selectedItem.courseDetails.metadata)}
+                      </p>
+                    </div>
+
+                    {extractMajorRestrictions(selectedItem.courseDetails.metadata) !== 'None' && (
+                      <div className={styles.formGroup}>
+                        <label className="text-gray-700 font-semibold">Major Restrictions</label>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {extractMajorRestrictions(selectedItem.courseDetails.metadata)}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <div className={styles.formGroup}>
+                <label className="text-gray-700 font-semibold">Details</label>
+                <p className="text-sm text-gray-600 mt-1">{selectedItem.description}</p>
+              </div>
+            )}
+
             <div className={styles.formGroup}>
               <label className="text-gray-700 font-semibold">Period</label>
               <p className="text-sm text-gray-600 mt-1">
                 {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][selectedItem.startMonth]} {selectedItem.startYear} - {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][selectedItem.endMonth]} {selectedItem.endYear}
               </p>
             </div>
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-800">
-                💡 Click on any item to view its details. Each card represents a course, internship, activity, or job in your pathway.
-              </p>
-            </div>
+
+            {selectedItem.category === 'Courses' && !selectedItem.courseDetails && (
+              <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-xs text-yellow-800">
+                  ℹ️ Detailed course information not found in the database for this course code.
+                </p>
+              </div>
+            )}
+
+            {selectedItem.category === 'Courses' && selectedItem.courseDetails && (
+              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-xs text-green-800">
+                  ✓ Course information loaded from UH Mānoa course catalog
+                </p>
+              </div>
+            )}
+
+            {selectedItem.category !== 'Courses' && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs text-blue-800">
+                  💡 Click on any item to view its details. Each card represents a course, internship, activity, or job in your pathway.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
