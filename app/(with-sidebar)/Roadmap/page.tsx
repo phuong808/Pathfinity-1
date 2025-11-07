@@ -353,9 +353,11 @@ export default function RoadmapPage() {
                     aria-expanded={open}
                     className="w-[350px] justify-between"
                   >
-                    {selectedPathwayId
-                      ? pathways.find((p) => p.id === selectedPathwayId)?.programName
-                      : "Select a degree program..."}
+                    <span className="truncate">
+                      {selectedPathwayId
+                        ? pathways.find((p) => p.id === selectedPathwayId)?.programName
+                        : "Select a degree program..."}
+                    </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -376,13 +378,13 @@ export default function RoadmapPage() {
                           >
                             <Check
                               className={cn(
-                                "mr-2 h-4 w-4",
+                                "mr-2 h-4 w-4 flex-shrink-0",
                                 selectedPathwayId === pathway.id ? "opacity-100" : "opacity-0"
                               )}
                             />
-                            <div className="flex flex-col">
-                              <span className="font-medium">{pathway.programName}</span>
-                              <span className="text-xs text-gray-500">{pathway.institution} • {pathway.totalCredits} credits</span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="font-medium truncate">{pathway.programName}</span>
+                              <span className="text-xs text-gray-500 truncate">{pathway.institution} • {pathway.totalCredits} credits</span>
                             </div>
                           </CommandItem>
                         ))}
