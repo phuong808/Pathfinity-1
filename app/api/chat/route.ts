@@ -8,7 +8,9 @@ import {
     tool,
     InferUITools,
     UIDataTypes,
-    stepCountIs
+    stepCountIs,
+    createIdGenerator,
+    validateUIMessages,
 } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
@@ -16,6 +18,7 @@ import { semanticSearch } from '@/lib/semantic-search';
 import { db } from '@/app/db/index';
 import { embedding as e } from '@/app/db/schema';
 import { sql } from 'drizzle-orm';
+import { loadChat, saveChat } from '@/app/db/actions';
 
 const tools = {
     getCourseByCode: tool({
@@ -267,7 +270,19 @@ export type ChatMessage = UIMessage<never, UIDataTypes, ChatTools>;
 
 export async function POST(req: Request) {
     try {
-        const { messages }: { messages: ChatMessage[] } = await req.json();
+        const { message, id }: { message?: ChatMessage; id: string } = await req.json();
+
+        // Load previous messages from database
+        const previousMessages = await loadChat(id);
+
+        // Append new message to previous messages if provided
+        const allMessages = message ? [...previousMessages, message] : previousMessages;
+
+        // Validate messages against tools to ensure consistency
+        const messages = await validateUIMessages({
+            messages: allMessages,
+            tools: tools as any,
+        });
 
         const result = streamText({
             model: openai('gpt-4.1-mini'),
@@ -293,6 +308,13 @@ For listing/browsing courses:
 - Present results in a clear, organized way
 - If many results, suggest being more specific
 - IMPORTANT: Only call this tool ONCE per response - do not repeat calls
+
+For listing universities / campuses (treat every campus as a university):
+- Users may ask to "list universities", "what universities are included", or "which campuses are available". These requests are course-related and allowed.
+- Treat every distinct campus value and every distinct department name (metadata->>'dept_name') as a university entry. Normalize common abbreviations and alternate names (for example, treat "PCATT" and "Pacific Center for Advanced Technology Training" as the same university). Prefer the longer, more descriptive name when both appear.
+- Preferred method: call searchKnowledgeBase once with queries that surface campus and department fields (examples: "campus", "dept_name", "department", "PCATT"). Inspect returned results for fields such as result.content.campus, result.content.dept_name, result.source, and result.course_code. Extract and normalize distinct campus and dept_name values and present a concise numbered list of the unique universities found. When possible, include the number of courses found for each (for example: "1) Kauai Community College — 42 courses").
+- Fallback: if searchKnowledgeBase does not return enough coverage, call listCourses once with a larger limit (for example, limit=1000) and aggregate unique values from the campus field and the metadata->>'dept_name' field across results to build and normalize the campus/university list.
+- IMPORTANT: Make only one tool call for the listing action in a single response (either searchKnowledgeBase or listCourses) and avoid calling the same tool multiple times.
 
 For specific course searches:
 - Use searchKnowledgeBase for topic-based searches, not exact course codes
@@ -326,11 +348,23 @@ RULES:
 - Cite sources with [1], [2] when providing course information from searchKnowledgeBase
 - Keep responses concise (2-5 sentences typically)
 - Guide users toward more specific queries if their question is too broad
-- When credits/units are not available, clearly state "Not specified" rather than saying you can't find the info`,
+- When credits/units are not available, clearly state "Not specified" rather than saying you can't find the info
+- Prefer using bullted style lists when tasked with listing things.`,
             stopWhen: stepCountIs(2),
         });
 
-        return result.toUIMessageStreamResponse();
+        return result.toUIMessageStreamResponse({
+            originalMessages: messages,
+            // Generate server-side message IDs for persistence
+            generateMessageId: createIdGenerator({
+                prefix: 'msg',
+                size: 16,
+            }),
+            onFinish: async ({ messages }) => {
+                // Save messages to database
+                await saveChat({ chatId: id, messages });
+            },
+        });
     } catch (error) {
         console.error('Error streaming chat completion:', error);
         return new Response('Failed to stream chat completion', { status: 500 });
