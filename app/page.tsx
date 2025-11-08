@@ -60,16 +60,15 @@ export default async function Home() {
             </div>
             
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6 leading-tight">
-              Discover Your{' '}
+              Your AI-Powered{' '}
               <span className="bg-gradient-to-r from-blue-600 via-emerald-500 to-blue-600 bg-clip-text text-transparent">
-                Career Pathway
+                Career Guide
               </span>
             </h1>
             
             <p className="text-xl text-gray-600 mb-10 leading-relaxed">
-              Navigate your academic journey with confidence. Pathfinity helps UH students 
-              explore majors, connect with mentors, discover internships, and map their path 
-              to a successful career—all in one intelligent platform.
+              Get personalized career advice, visualize your path to success, and connect with mentors—all powered by AI. 
+              Pathfinity is your intelligent companion for navigating your academic and career journey at UH.
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -92,16 +91,16 @@ export default async function Home() {
           {/* Stats Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-24">
             <div className="bg-white/80 backdrop-blur rounded-2xl p-6 text-center shadow-lg border border-gray-200">
-              <div className="text-4xl font-bold text-blue-600 mb-2">100+</div>
-              <div className="text-gray-600 font-medium">Career Pathways</div>
+              <div className="text-4xl font-bold text-pink-600 mb-2">24/7</div>
+              <div className="text-gray-600 font-medium">AI Career Support</div>
             </div>
             <div className="bg-white/80 backdrop-blur rounded-2xl p-6 text-center shadow-lg border border-gray-200">
-              <div className="text-4xl font-bold text-emerald-600 mb-2">50+</div>
-              <div className="text-gray-600 font-medium">Degree Programs</div>
+              <div className="text-4xl font-bold text-emerald-600 mb-2">100+</div>
+              <div className="text-gray-600 font-medium">Degree Pathways</div>
             </div>
             <div className="bg-white/80 backdrop-blur rounded-2xl p-6 text-center shadow-lg border border-gray-200">
-              <div className="text-4xl font-bold text-purple-600 mb-2">500+</div>
-              <div className="text-gray-600 font-medium">Internship Opportunities</div>
+              <div className="text-4xl font-bold text-orange-600 mb-2">500+</div>
+              <div className="text-gray-600 font-medium">Mentors & Alumni</div>
             </div>
           </div>
         </section>
@@ -109,45 +108,102 @@ export default async function Home() {
         {/* Features Section */}
         <section id="features" className="max-w-7xl mx-auto mb-24">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Everything You Need to Succeed</h2>
-            <p className="text-xl text-gray-600">Powerful tools designed for UH students</p>
+            <h2 className="text-4xl font-bold mb-4">Three Powerful Tools, One Platform</h2>
+            <p className="text-xl text-gray-600">Everything you need to navigate your career journey</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
-              <div className="w-14 h-14 rounded-xl bg-pink-100 flex items-center justify-center mb-6">
-                <MessageSquare className="w-7 h-7 text-pink-600" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 1 - AI Career Advisor */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all border-2 border-pink-100 hover:border-pink-300">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center mb-6 shadow-lg">
+                <MessageSquare className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-3">AI Career Advisor</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Get instant answers to your career questions with our intelligent AI assistant. 
-                Available 24/7 to help you make informed decisions.
+              <div className="mb-4">
+                <span className="inline-block px-3 py-1 bg-pink-100 text-pink-700 text-xs font-semibold rounded-full mb-3">
+                  CORE FEATURE
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold mb-4">AI Career Advisor</h3>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                Chat with your personal AI advisor anytime, anywhere. Get instant answers about majors, career options, 
+                course selections, and more. It&apos;s like having a career counselor in your pocket.
               </p>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-pink-600 mt-0.5">✓</span>
+                  <span>Personalized career recommendations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-pink-600 mt-0.5">✓</span>
+                  <span>24/7 availability</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-pink-600 mt-0.5">✓</span>
+                  <span>Context-aware conversations</span>
+                </li>
+              </ul>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
-              <div className="w-14 h-14 rounded-xl bg-emerald-100 flex items-center justify-center mb-6">
-                <Map className="w-7 h-7 text-emerald-600" />
+            {/* Feature 2 - Career Roadmaps */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all border-2 border-emerald-100 hover:border-emerald-300">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mb-6 shadow-lg">
+                <Map className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Career Roadmaps</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Visualize your path from freshman year to career success. Get personalized roadmaps 
-                with milestones, courses, and actionable steps.
+              <div className="mb-4">
+                <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full mb-3">
+                  CORE FEATURE
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Career Roadmaps</h3>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                Visualize your entire journey from day one to graduation and beyond. Get clear, step-by-step 
+                guidance on courses, skills, certifications, and milestones to reach your goals.
               </p>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-0.5">✓</span>
+                  <span>Interactive visual timelines</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-0.5">✓</span>
+                  <span>Customized for your major</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-0.5">✓</span>
+                  <span>Track your progress</span>
+                </li>
+              </ul>
             </div>
 
-            {/* Feature 3 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
-              <div className="w-14 h-14 rounded-xl bg-orange-100 flex items-center justify-center mb-6">
-                <Users className="w-7 h-7 text-orange-600" />
+            {/* Feature 3 - Connect with Mentors */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all border-2 border-orange-100 hover:border-orange-300">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center mb-6 shadow-lg">
+                <Users className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Connect with Mentors</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Network with UH alumni, professors, and industry professionals who can guide 
-                your academic and career journey.
+              <div className="mb-4">
+                <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full mb-3">
+                  CORE FEATURE
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Connect with Mentors</h3>
+              <p className="text-gray-600 leading-relaxed mb-6">
+                Build meaningful connections with UH alumni, industry professionals, and peers who&apos;ve been 
+                where you are. Get advice, insights, and opportunities from real people in your field.
               </p>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 mt-0.5">✓</span>
+                  <span>Match with relevant mentors</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 mt-0.5">✓</span>
+                  <span>Schedule meetings easily</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 mt-0.5">✓</span>
+                  <span>Build your network</span>
+                </li>
+              </ul>
             </div>
           </div>
         </section>
@@ -156,18 +212,19 @@ export default async function Home() {
         <section className="max-w-5xl mx-auto mb-24">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">How Pathfinity Works</h2>
-            <p className="text-xl text-gray-600">Your journey in three simple steps</p>
+            <p className="text-xl text-gray-600">Start your journey in three simple steps</p>
           </div>
 
           <div className="space-y-12">
             <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 text-white flex items-center justify-center text-2xl font-bold shadow-lg">
+              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-pink-600 to-pink-400 text-white flex items-center justify-center text-2xl font-bold shadow-lg">
                 1
               </div>
               <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-2">Create Your Profile</h3>
+                <h3 className="text-2xl font-bold mb-2">Chat with Your AI Advisor</h3>
                 <p className="text-gray-600 text-lg">
-                  Sign up with your UH credentials and tell us about your interests, skills, and career aspirations.
+                  Start by asking questions about your interests, career goals, or major options. 
+                  Your AI advisor will get to know you and provide personalized recommendations.
                 </p>
               </div>
             </div>
@@ -177,21 +234,23 @@ export default async function Home() {
                 2
               </div>
               <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-2">Explore & Discover</h3>
+                <h3 className="text-2xl font-bold mb-2">Explore Your Roadmap</h3>
                 <p className="text-gray-600 text-lg">
-                  Browse majors, career paths, and opportunities tailored to your profile. Chat with our AI advisor for personalized guidance.
+                  View a customized roadmap showing exactly what courses to take, skills to develop, 
+                  and milestones to hit each semester on your path to success.
                 </p>
               </div>
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-purple-400 text-white flex items-center justify-center text-2xl font-bold shadow-lg">
+              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-orange-600 to-orange-400 text-white flex items-center justify-center text-2xl font-bold shadow-lg">
                 3
               </div>
               <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-2">Build Your Future</h3>
+                <h3 className="text-2xl font-bold mb-2">Connect & Grow</h3>
                 <p className="text-gray-600 text-lg">
-                  Follow your personalized roadmap, connect with mentors, apply for internships, and achieve your career goals.
+                  Connect with mentors and peers who can guide you, share experiences, and help you 
+                  navigate challenges. Build a network that supports your journey.
                 </p>
               </div>
             </div>
