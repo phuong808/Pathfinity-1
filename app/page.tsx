@@ -100,7 +100,7 @@ export default async function Home() {
             </div>
             <div className="bg-white/80 backdrop-blur rounded-2xl p-6 text-center shadow-lg border border-gray-200">
               <div className="text-4xl font-bold text-orange-600 mb-2">500+</div>
-              <div className="text-gray-600 font-medium">Mentors & Alumni</div>
+              <div className="text-gray-600 font-medium">Advisors & Clubs</div>
             </div>
           </div>
         </section>
@@ -170,7 +170,7 @@ export default async function Home() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 mt-0.5">✓</span>
-                  <span>Track your progress</span>
+                  <span>Semester-by-semester planning</span>
                 </li>
               </ul>
             </div>
@@ -187,21 +187,21 @@ export default async function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-4">Connect with Mentors</h3>
               <p className="text-gray-600 leading-relaxed mb-6">
-                Build meaningful connections with UH alumni, industry professionals, and peers who&apos;ve been 
-                where you are. Get advice, insights, and opportunities from real people in your field.
+                Get guidance from academic advisors and discover student clubs that align with your interests. 
+                Build relationships and join communities that support your academic and career goals.
               </p>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
                   <span className="text-orange-600 mt-0.5">✓</span>
-                  <span>Match with relevant mentors</span>
+                  <span>Connect with academic advisors</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-orange-600 mt-0.5">✓</span>
-                  <span>Schedule meetings easily</span>
+                  <span>Discover relevant clubs</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-orange-600 mt-0.5">✓</span>
-                  <span>Build your network</span>
+                  <span>Join student communities</span>
                 </li>
               </ul>
             </div>
