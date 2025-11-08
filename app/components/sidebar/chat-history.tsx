@@ -180,7 +180,11 @@ export function ChatHistory({
                             return (
                                 <SidebarMenuItem key={chat.id}>
                                     <SidebarMenuButton asChild isActive={isActive} className={cn("w-full justify-start")}>
-                                        <a href={`/Chat/${chat.id}`} className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => router.push(`/Chat/${chat.id}`)}
+                                            className="flex items-center gap-2 w-full text-left"
+                                        >
                                             <div className="flex-1 min-w-0">
                                                 <div
                                                     className="truncate text-sm font-muted"
@@ -190,7 +194,7 @@ export function ChatHistory({
                                                     {chat.title ?? "New Chat"}
                                                 </div>
                                             </div>
-                                        </a>
+                                        </button>
                                     </SidebarMenuButton>
 
                                     <ChatDropdown chat={chat} onRename={openRenameDialog} onDelete={openDeleteDialog} />

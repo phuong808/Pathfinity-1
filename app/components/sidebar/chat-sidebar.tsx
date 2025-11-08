@@ -79,10 +79,14 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
                     asChild
                     className="data-[slot=sidebar-menu-button]:!p-1.5"
                   >
-                    <a href="/">
+                    <button
+                      type="button"
+                      onClick={() => router.push('/')}
+                      className="flex items-center gap-2"
+                    >
                       <Infinity className="h-5 w-5" />
                       <span className="text-base font-semibold">Pathfinity</span>
-                    </a>
+                    </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
