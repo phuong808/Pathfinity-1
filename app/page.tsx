@@ -22,7 +22,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-200">
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-200">
         <div className="flex items-center justify-between px-6 lg:px-12 py-4 max-w-7xl mx-auto w-full">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-xl transition-shadow">
@@ -51,7 +51,7 @@ export default async function Home() {
       </header>
 
       {/* Hero Section */}
-      <main className="pt-32 pb-20 px-6">
+      <main className="pb-20 px-6">
         <section className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
@@ -68,7 +68,7 @@ export default async function Home() {
             
             <p className="text-xl text-gray-600 mb-10 leading-relaxed">
               Get personalized career advice, visualize your path to success, and connect with mentors—all powered by AI. 
-              Pathfinity is your intelligent companion for navigating your academic and career journey at UH.
+              Pathfinity is your intelligent companion for navigating your academic and career journey at University of Hawaii.
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -157,7 +157,7 @@ export default async function Home() {
               <h3 className="text-2xl font-bold mb-4">Career Roadmaps</h3>
               <p className="text-gray-600 leading-relaxed mb-6">
                 Visualize your entire journey from day one to graduation and beyond. Get clear, step-by-step 
-                guidance on courses, skills, certifications, and milestones to reach your goals.
+                guidance on courses, skills, and milestones to reach your goals.
               </p>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
