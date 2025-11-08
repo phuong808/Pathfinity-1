@@ -2,10 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth-server';
 import Link from 'next/link';
 import { 
-  GraduationCap, 
-  TrendingUp, 
   Users, 
-  Briefcase, 
   Map, 
   MessageSquare,
   ArrowRight,
@@ -119,13 +116,13 @@ export default async function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 */}
             <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
-              <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center mb-6">
-                <GraduationCap className="w-7 h-7 text-blue-600" />
+              <div className="w-14 h-14 rounded-xl bg-pink-100 flex items-center justify-center mb-6">
+                <MessageSquare className="w-7 h-7 text-pink-600" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Explore Majors</h3>
+              <h3 className="text-xl font-bold mb-3">AI Career Advisor</h3>
               <p className="text-gray-600 leading-relaxed">
-                Discover the perfect major that aligns with your interests, strengths, and career goals. 
-                Browse UH&apos;s comprehensive programs with detailed insights.
+                Get instant answers to your career questions with our intelligent AI assistant. 
+                Available 24/7 to help you make informed decisions.
               </p>
             </div>
 
@@ -143,18 +140,6 @@ export default async function Home() {
 
             {/* Feature 3 */}
             <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
-              <div className="w-14 h-14 rounded-xl bg-purple-100 flex items-center justify-center mb-6">
-                <Briefcase className="w-7 h-7 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Find Internships</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Access curated internship opportunities from local Hawaii companies and global 
-                organizations. Build real-world experience while studying.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
               <div className="w-14 h-14 rounded-xl bg-orange-100 flex items-center justify-center mb-6">
                 <Users className="w-7 h-7 text-orange-600" />
               </div>
@@ -162,30 +147,6 @@ export default async function Home() {
               <p className="text-gray-600 leading-relaxed">
                 Network with UH alumni, professors, and industry professionals who can guide 
                 your academic and career journey.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
-              <div className="w-14 h-14 rounded-xl bg-pink-100 flex items-center justify-center mb-6">
-                <MessageSquare className="w-7 h-7 text-pink-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">AI Career Advisor</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Get instant answers to your career questions with our intelligent AI assistant. 
-                Available 24/7 to help you make informed decisions.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow border border-gray-200">
-              <div className="w-14 h-14 rounded-xl bg-teal-100 flex items-center justify-center mb-6">
-                <TrendingUp className="w-7 h-7 text-teal-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Career Insights</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Access salary data, job market trends, and growth projections for different 
-                careers. Make data-driven decisions about your future.
               </p>
             </div>
           </div>
