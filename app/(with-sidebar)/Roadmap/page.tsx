@@ -332,14 +332,14 @@ export default function RoadmapPage() {
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <div className="flex flex-col p-4 gap-3">
+        <div className="flex flex-col p-5 pl-16 gap-3">
           <div className="flex items-center justify-between">
             <div>
               <h1 className={styles.headerTitle}>
-                � UH Mānoa Degree Pathway Roadmap
+                🎓 UH Mānoa Degree Pathway
               </h1>
               {selectedPathway && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-blue-100 mt-2 font-medium">
                   {selectedPathway.programName} • {selectedPathway.totalCredits} Total Credits
                 </p>
               )}
@@ -351,7 +351,7 @@ export default function RoadmapPage() {
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-[350px] justify-between"
+                    className="w-[350px] justify-between bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 hover:border-green-600 font-medium"
                   >
                     <span className="truncate">
                       {selectedPathwayId
@@ -404,9 +404,12 @@ export default function RoadmapPage() {
         <div className={styles.timelineGrid}>
           {timelineData.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <p className="text-gray-500 text-lg mb-2">No pathway selected</p>
-                <p className="text-gray-400 text-sm">Select a degree program from the dropdown above to view the 4-year roadmap</p>
+              <div className="text-center p-8 bg-white rounded-2xl shadow-lg">
+                <div className="text-6xl mb-4">🎓</div>
+                <p className="text-gray-700 text-xl font-semibold mb-2">No Pathway Selected</p>
+                <p className="text-gray-500 text-sm max-w-md">
+                  Select a degree program from the dropdown above to view your complete 4-year academic pathway with detailed course information
+                </p>
               </div>
             </div>
           ) : (
@@ -435,9 +438,23 @@ export default function RoadmapPage() {
                   const year = match ? match[1] : '';
                   const semester = match ? match[2] : period;
                   
+                  // Get items for this period
+                  const itemsForPeriod = timelineData.filter(item => {
+                    const itemPeriod = item.description?.split(' • ')[1];
+                    return itemPeriod === period && visibleCategories.includes(item.category);
+                  });
+                  
+                  // Calculate total credits for this semester
+                  const totalCredits = itemsForPeriod.reduce((sum, item) => {
+                    if (item.category === 'Courses' && item.courseDetails) {
+                      return sum + (parseInt(item.courseDetails.num_units) || 0);
+                    }
+                    return sum;
+                  }, 0);
+                  
                   return (
                     <div key={periodIndex} className={styles.contentRow}>
-                      {/* Timeline cell for this row */}
+                      {/* Timeline cell for this row - now a header */}
                       <div 
                         className={styles.timelineCell}
                         style={{ backgroundColor: getTimelineColor(period) }}
@@ -446,42 +463,79 @@ export default function RoadmapPage() {
                           <span className={styles.timelineYear}>Year {year}</span>
                           <span className={styles.timelineSemester}>{semester}</span>
                         </div>
+                        {totalCredits > 0 && (
+                          <div className={styles.semesterCredits}>
+                            {totalCredits} Credits
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Category columns */}
-                      {categories.filter(cat => visibleCategories.includes(cat)).map((category) => {
-                        // Get items for this period and category
-                        const itemsForCell = timelineData.filter(item => {
-                          const itemPeriod = item.description?.split(' • ')[1];
-                          return item.category === category && itemPeriod === period;
-                        });
-
-                        return (
-                          <div key={category} className={styles.contentColumn}>
-                            {itemsForCell.map((item) => {
-                              const itemColor = getItemColor(item.id, category, item.description);
-                              return (
-                                <div
-                                  key={item.id}
-                                  className={cn(
-                                    styles.itemCard,
-                                    selectedItem?.id === item.id && styles.itemCardSelected
-                                  )}
-                                  style={{
-                                    borderLeftColor: itemColor,
-                                  }}
-                                  onClick={() => setSelectedItem(item)}
-                                >
-                                  <div className={styles.itemCardLabel}>{item.name}</div>
-                                  <div className={styles.itemCardDetails}>
-                                    {item.description?.split(' • ')[0]}
+                      {/* Course grid */}
+                      <div className={styles.contentColumn}>
+                        {itemsForPeriod.map((item) => {
+                          const itemColor = getItemColor(item.id, item.category, item.description);
+                          const courseDetails = item.courseDetails;
+                          
+                          return (
+                            <div
+                              key={item.id}
+                              className={cn(
+                                styles.itemCard,
+                                selectedItem?.id === item.id && styles.itemCardSelected
+                              )}
+                              style={{
+                                borderLeftColor: itemColor,
+                              }}
+                              onClick={() => setSelectedItem(item)}
+                            >
+                              {/* Course Header with Code and Credits */}
+                              <div className={styles.courseHeader}>
+                                <div className={styles.itemCardLabel}>{item.name}</div>
+                                {courseDetails && (
+                                  <div className={styles.courseCredits}>
+                                    {courseDetails.num_units} CR
                                   </div>
+                                )}
+                              </div>
+                              
+                              {/* Course Title */}
+                              {courseDetails && (
+                                <div className={styles.courseTitle}>
+                                  {courseDetails.course_title}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
+                              )}
+                              
+                              {/* Course Description */}
+                              {courseDetails && courseDetails.course_desc && (
+                                <div className={styles.courseDescription}>
+                                  {courseDetails.course_desc}
+                                </div>
+                              )}
+                              
+                              {/* Metadata Tags */}
+                              {courseDetails && (
+                                <div className={styles.courseMetadata}>
+                                  <div className={cn(styles.metadataTag, styles.departmentTag)}>
+                                    📚 {courseDetails.dept_name}
+                                  </div>
+                                  {courseDetails.metadata && extractPrerequisites(courseDetails.metadata) !== 'None' && (
+                                    <div className={cn(styles.metadataTag, styles.prerequisiteTag)}>
+                                      ⚠️ Has Prerequisites
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Fallback for non-detailed courses */}
+                              {!courseDetails && (
+                                <div className={styles.itemCardDetails}>
+                                  {item.description?.split(' • ')[0]}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
@@ -495,8 +549,8 @@ export default function RoadmapPage() {
       {selectedItem && (
         <div className={styles.editPanel}>
           <div className={styles.editPanelHeader}>
-            <h3 className="font-bold">
-              {selectedItem.category === 'Courses' && selectedItem.courseDetails ? 'Course Details' : 'Item Details'}
+            <h3 className="font-bold text-lg text-gray-800">
+              {selectedItem.category === 'Courses' && selectedItem.courseDetails ? '📖 Course Information' : 'ℹ️ Item Details'}
             </h3>
             <button
               onClick={() => setSelectedItem(null)}
@@ -507,119 +561,117 @@ export default function RoadmapPage() {
             </button>
           </div>
           <div className={styles.editPanelContent}>
-            <div className={styles.formGroup}>
-              <label className="text-gray-700 font-semibold">Type</label>
-              <p className="text-sm text-gray-600 mt-1">{selectedItem.category}</p>
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label className="text-gray-700 font-semibold">
-                {selectedItem.category === 'Courses' ? 'Course Code' : 'Name'}
-              </label>
-              <p className="text-sm text-gray-600 mt-1 font-medium">{selectedItem.name}</p>
-            </div>
-
             {/* Show detailed course information if available */}
             {selectedItem.category === 'Courses' && selectedItem.courseDetails ? (
               <>
                 <div className={styles.formGroup}>
-                  <label className="text-gray-700 font-semibold">Course Title</label>
-                  <p className="text-sm text-gray-600 mt-1">{selectedItem.courseDetails.course_title}</p>
+                  <label>Course Code</label>
+                  <p className="text-lg font-bold text-blue-600">{selectedItem.name}</p>
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label>Course Title</label>
+                  <p className="text-base font-semibold text-gray-800">{selectedItem.courseDetails.course_title}</p>
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className="text-gray-700 font-semibold">Description</label>
-                  <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                  <label>Description</label>
+                  <p className="text-sm text-gray-700 leading-relaxed">
                     {selectedItem.courseDetails.course_desc}
                   </p>
                 </div>
 
-                <div className={styles.formGroup}>
-                  <label className="text-gray-700 font-semibold">Department</label>
-                  <p className="text-sm text-gray-600 mt-1">{selectedItem.courseDetails.dept_name}</p>
-                </div>
-
-                <div className={styles.formRow}>
+                <div className="grid grid-cols-2 gap-4">
                   <div className={styles.formGroup}>
-                    <label className="text-gray-700 font-semibold">Credits</label>
-                    <p className="text-sm text-gray-600 mt-1">{selectedItem.courseDetails.num_units}</p>
+                    <label>Credits</label>
+                    <p className="text-base font-semibold text-gray-800">{selectedItem.courseDetails.num_units}</p>
+                  </div>
+                  
+                  <div className={styles.formGroup}>
+                    <label>Department</label>
+                    <p className="text-sm text-gray-700">{selectedItem.courseDetails.dept_name}</p>
                   </div>
                 </div>
 
                 {selectedItem.courseDetails.metadata && (
                   <>
                     <div className={styles.formGroup}>
-                      <label className="text-gray-700 font-semibold">Prerequisites</label>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <label>Prerequisites</label>
+                      <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                         {extractPrerequisites(selectedItem.courseDetails.metadata)}
                       </p>
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label className="text-gray-700 font-semibold">Grade Option</label>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <label>Grade Option</label>
+                      <p className="text-sm text-gray-700">
                         {extractGradeOption(selectedItem.courseDetails.metadata)}
                       </p>
                     </div>
 
                     {extractMajorRestrictions(selectedItem.courseDetails.metadata) !== 'None' && (
                       <div className={styles.formGroup}>
-                        <label className="text-gray-700 font-semibold">Major Restrictions</label>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <label>Major Restrictions</label>
+                        <p className="text-sm text-gray-700 bg-red-50 p-3 rounded-lg border border-red-200">
                           {extractMajorRestrictions(selectedItem.courseDetails.metadata)}
                         </p>
                       </div>
                     )}
                   </>
                 )}
+                
+                <div className={styles.formGroup}>
+                  <label>Semester</label>
+                  <p className="text-sm text-gray-700">{selectedItem.description?.split(' • ')[1]}</p>
+                </div>
+
+                <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                  <p className="text-sm text-blue-900 font-medium flex items-center gap-2">
+                    <span className="text-lg">✓</span>
+                    Course information from UH Mānoa catalog
+                  </p>
+                </div>
+              </>
+            ) : selectedItem.category === 'Courses' ? (
+              <>
+                <div className={styles.formGroup}>
+                  <label>Course Code</label>
+                  <p className="text-lg font-bold text-blue-600">{selectedItem.name}</p>
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label>Details</label>
+                  <p className="text-sm text-gray-700">{selectedItem.description}</p>
+                </div>
+                
+                <div className="mt-4 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-300">
+                  <p className="text-sm text-yellow-900 font-medium flex items-center gap-2">
+                    <span className="text-lg">ℹ️</span>
+                    Detailed course information not found in the database
+                  </p>
+                </div>
               </>
             ) : (
-              <div className={styles.formGroup}>
-                <label className="text-gray-700 font-semibold">Details</label>
-                <p className="text-sm text-gray-600 mt-1">{selectedItem.description}</p>
-              </div>
-            )}
-
-            <div className={styles.formGroup}>
-              <label className="text-gray-700 font-semibold">Period</label>
-              <p className="text-sm text-gray-600 mt-1">
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][selectedItem.startMonth]} {selectedItem.startYear} - {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][selectedItem.endMonth]} {selectedItem.endYear}
-              </p>
-            </div>
-
-            {selectedItem.category === 'Courses' && !selectedItem.courseDetails && (
-              <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-xs text-yellow-800">
-                  ℹ️ Detailed course information not found in the database for this course code.
-                </p>
-              </div>
-            )}
-
-            {selectedItem.category === 'Courses' && selectedItem.courseDetails && (
-              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-xs text-green-800">
-                  ✓ Course information loaded from UH Mānoa course catalog
-                </p>
-              </div>
-            )}
-
-            {selectedItem.category !== 'Courses' && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-xs text-blue-800">
-                  💡 Click on any item to view its details. Each card represents a course, internship, activity, or job in your pathway.
-                </p>
-              </div>
+              <>
+                <div className={styles.formGroup}>
+                  <label>Type</label>
+                  <p className="text-sm text-gray-700">{selectedItem.category}</p>
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label>Name</label>
+                  <p className="text-base font-semibold text-gray-800">{selectedItem.name}</p>
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label>Details</label>
+                  <p className="text-sm text-gray-700">{selectedItem.description}</p>
+                </div>
+              </>
             )}
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <div className={styles.footer}>
-        <p className="text-center text-sm text-gray-600">
-          📅 Click on any card to view details • View courses, internships, activities, and jobs organized by category and semester across your 4-year journey
-        </p>
-      </div>
     </div>
   );
 }
