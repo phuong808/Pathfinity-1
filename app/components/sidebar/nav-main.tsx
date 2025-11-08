@@ -1,6 +1,6 @@
 "use client"
 
-import { type LucideIcon } from "lucide-react"
+import { UserRoundPlus, type LucideIcon } from "lucide-react"
 
 import {
   SidebarGroup,
@@ -39,6 +39,20 @@ export function NavMain({
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Create Pathway" asChild>
+                <button
+                type="button"
+                onClick={() => router.push('/CreatePathway')}
+                className="flex items-center gap-2 w-full text-left text-white !bg-green-600 hover:!bg-green-700 active:!bg-green-800 !border-green-600 hover:text-white active:text-white focus-visible:!ring-2 focus-visible:!ring-green-300 transition-all duration-200"
+              >
+                <UserRoundPlus />
+                <span>Create Pathway</span>
+              </button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

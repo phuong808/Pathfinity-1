@@ -1,6 +1,6 @@
 import "../globals.css";
 import { SidebarProvider } from "../components/ui/sidebar";
-import { ChatSidebar } from "../components/sidebar/chat-sidebar";
+import { ChatSidebar } from "../components/sidebar/sidebar";
 import { getSession } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 
