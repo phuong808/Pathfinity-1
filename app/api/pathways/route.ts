@@ -89,12 +89,15 @@ export async function GET(request: Request) {
       });
     }
 
-    // Otherwise, return list of all pathways (metadata only)
+    // Otherwise, return list of all pathways with full data
     const pathwayList = pathways.map((p, index) => ({
       id: index + 1,
       programName: p.program_name,
       institution: p.institution,
       totalCredits: p.total_credits.toString(),
+      pathwayData: p, // Include the full pathway data
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }));
 
     return NextResponse.json(pathwayList);
