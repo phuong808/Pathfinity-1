@@ -16,67 +16,85 @@ import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { semanticSearch } from '@/lib/semantic-search';
 import { db } from '@/app/db/index';
-import { embedding as e } from '@/app/db/schema';
-import { sql } from 'drizzle-orm';
+import { embedding as e, course as c, campus as cam } from '@/app/db/schema';
+import { sql, eq } from 'drizzle-orm';
 import { loadChat, saveChat } from '@/app/db/actions';
 
 const tools = {
     getCourseByCode: tool({
-        description: "Get detailed information about a specific course by its exact course code (e.g., 'Com 2163', 'COM 2158'). Use this when user mentions a specific course code.",
+        description: "Get detailed information about a specific course by its exact course code (e.g., 'COM 2163', 'ICS 101'). Use this when user mentions a specific course code.",
         inputSchema: z.object({
-            courseCode: z.string().describe("The exact course code (e.g., 'Com 2163')"),
+            courseCode: z.string().describe("The exact course code (e.g., 'COM 2163')"),
         }),
         execute: async ({ courseCode }) => {
             try {
-                // Normalize the course code (remove extra spaces, make uppercase)
-                const normalized = courseCode.trim().toUpperCase().replace(/\s+/g, ' ');
+                // Parse course code into prefix and number
+                const match = courseCode.trim().match(/^([A-Z]+)\s*(\d+[A-Z]*)$/i);
+                if (!match) {
+                    return `Invalid course code format: ${courseCode}. Expected format like 'COM 2163' or 'ICS 101'.`;
+                }
                 
-                const course = await db
+                const [, prefix, number] = match;
+                const normalizedPrefix = prefix.toUpperCase();
+                const normalizedNumber = number.toUpperCase();
+                
+                // Join courses with campus and get embedding metadata
+                const result = await db
                     .select({
-                        course_code: e.courseCode,
-                        title: e.title,
-                        campus: e.campus,
-                        metadata: e.metadata,
+                        courseId: c.id,
+                        coursePrefix: c.coursePrefix,
+                        courseNumber: c.courseNumber,
+                        courseTitle: c.courseTitle,
+                        courseDesc: c.courseDesc,
+                        numUnits: c.numUnits,
+                        deptName: c.deptName,
+                        campusId: cam.id,
+                        campusName: cam.name,
+                        campusType: cam.type,
+                        instIpeds: cam.instIpeds,
+                        embeddingMetadata: e.metadata,
                     })
-                    .from(e)
-                    .where(sql`UPPER(${e.courseCode}) = ${normalized}`)
+                    .from(c)
+                    .leftJoin(cam, eq(c.campusId, cam.id))
+                    .leftJoin(e, eq(e.courseId, c.id))
+                    .where(sql`UPPER(${c.coursePrefix}) = ${normalizedPrefix} AND UPPER(${c.courseNumber}) = ${normalizedNumber}`)
                     .limit(1);
 
-                if (!course || course.length === 0) {
+                if (!result || result.length === 0) {
                     return `Course ${courseCode} not found in the knowledge base. Please verify the course code or try searching with keywords.`;
                 }
 
-                const c = course[0];
-                const metadata = c.metadata as any;
+                const course = result[0];
+                const metadata = course.embeddingMetadata as any;
 
                 const lines = [
-                    `Course: ${c.course_code} - ${c.title}`,
+                    `Course: ${course.coursePrefix} ${course.courseNumber} - ${course.courseTitle || 'No title'}`,
                 ];
 
-                if (c.campus) lines.push(`Campus/Department: ${c.campus}`);
+                if (course.campusName) lines.push(`Campus: ${course.campusName}`);
+                if (course.deptName) lines.push(`Department: ${course.deptName}`);
                 
-                // Handle credits/units (check multiple fields)
-                const units = metadata?.num_units || metadata?.units || metadata?.credits || metadata?.credit_hours;
-                if (units !== undefined && units !== null && String(units).trim() !== '') {
-                    lines.push(`Units/Credits: ${units}`);
+                // Units/Credits
+                if (course.numUnits !== undefined && course.numUnits !== null && String(course.numUnits).trim() !== '') {
+                    lines.push(`Units/Credits: ${course.numUnits}`);
                 } else {
                     lines.push(`Units/Credits: Not specified`);
                 }
                 
-                if (metadata?.course_desc) lines.push(`Description: ${metadata.course_desc}`);
+                if (course.courseDesc) lines.push(`Description: ${course.courseDesc}`);
+                
+                // Additional metadata from embedding
                 if (metadata?.metadata && String(metadata.metadata).trim()) {
                     lines.push(`Additional Info: ${metadata.metadata}`);
                 }
                 
-                // Check for various prerequisite field names
+                // Prerequisites from various possible fields
                 const prereqs = metadata?.prerequisites || metadata?.required_prep || metadata?.required_prereq;
                 if (prereqs) lines.push(`Prerequisites: ${prereqs}`);
 
-                // Add other metadata fields if available
-                if (metadata?.dept_name) lines.push(`Department Name: ${metadata.dept_name}`);
-                if (metadata?.inst_ipeds) lines.push(`Institution IPEDS: ${metadata.inst_ipeds}`);
-                if (metadata?.course_prefix) lines.push(`Course Prefix: ${metadata.course_prefix}`);
-                if (metadata?.course_number) lines.push(`Course Number: ${metadata.course_number}`);
+                // Institution info
+                if (course.instIpeds) lines.push(`Institution IPEDS: ${course.instIpeds}`);
+                if (course.campusType) lines.push(`Campus Type: ${course.campusType}`);
 
                 return lines.join('\n\n');
             } catch (error) {
@@ -89,7 +107,7 @@ const tools = {
     listCourses: tool({
         description: "List courses from the knowledge base. Use when user wants to see all courses, browse courses, or list courses from a specific department/campus.",
         inputSchema: z.object({
-            department: z.string().optional().describe("Filter by department name (e.g., 'Pacific Center for Advanced Technology Training')"),
+            department: z.string().optional().describe("Filter by department name"),
             campus: z.string().optional().describe("Filter by campus name"),
             limit: z.number().optional().default(20).describe("Maximum number of courses to return"),
         }),
@@ -98,48 +116,56 @@ const tools = {
                 // Build WHERE conditions
                 const conditions = [];
                 if (department) {
-                    conditions.push(sql`${e.metadata}->>'dept_name' ILIKE ${`%${department}%`}`);
+                    conditions.push(sql`${c.deptName} ILIKE ${`%${department}%`}`);
                 }
                 if (campus) {
-                    conditions.push(sql`${e.campus} ILIKE ${`%${campus}%`}`);
+                    conditions.push(sql`${cam.name} ILIKE ${`%${campus}%`}`);
                 }
 
-                const baseSelect = db
+                // Build base query with joins
+                const baseQuery = db
                     .select({
-                        course_code: e.courseCode,
-                        title: e.title,
-                        campus: e.campus,
-                        metadata: e.metadata,
+                        courseId: c.id,
+                        coursePrefix: c.coursePrefix,
+                        courseNumber: c.courseNumber,
+                        courseTitle: c.courseTitle,
+                        courseDesc: c.courseDesc,
+                        numUnits: c.numUnits,
+                        deptName: c.deptName,
+                        campusName: cam.name,
                     })
-                    .from(e);
+                    .from(c)
+                    .leftJoin(cam, eq(c.campusId, cam.id));
 
-                // Apply WHERE conditions if present, then apply limit/orderBy on the final query.
-                const finalQuery = (conditions.length > 0)
-                    ? baseSelect.where(sql`${sql.join(conditions, sql` AND `)}`).limit(limit).orderBy(e.courseCode)
-                    : baseSelect.limit(limit).orderBy(e.courseCode);
-
-                const courses = await finalQuery;
+                // Apply WHERE conditions and execute
+                const courses = conditions.length > 0
+                    ? await baseQuery
+                        .where(sql`${sql.join(conditions, sql` AND `)}`)
+                        .orderBy(c.coursePrefix, c.courseNumber)
+                        .limit(limit)
+                    : await baseQuery
+                        .orderBy(c.coursePrefix, c.courseNumber)
+                        .limit(limit);
 
                 if (!courses || courses.length === 0) {
                     return 'No courses found matching those criteria.';
                 }
 
                 const formattedResults = courses.map((course, index) => {
-                    const metadata = course.metadata as any;
                     const lines = [
-                        `[${index + 1}] ${course.course_code} - ${course.title}`,
+                        `[${index + 1}] ${course.coursePrefix} ${course.courseNumber} - ${course.courseTitle || 'No title'}`,
                     ];
                     
-                    if (course.campus) lines.push(`   Campus/Department: ${course.campus}`);
+                    if (course.campusName) lines.push(`   Campus: ${course.campusName}`);
+                    if (course.deptName) lines.push(`   Department: ${course.deptName}`);
                     
-                    // Handle credits/units with fallback
-                    const units = metadata?.num_units || metadata?.units || metadata?.credits;
-                    if (units !== undefined && units !== null && String(units).trim() !== '') {
-                        lines.push(`   Units: ${units}`);
+                    // Handle units
+                    if (course.numUnits !== undefined && course.numUnits !== null && String(course.numUnits).trim() !== '') {
+                        lines.push(`   Units: ${course.numUnits}`);
                     }
                     
-                    if (metadata?.course_desc) {
-                        const desc = String(metadata.course_desc);
+                    if (course.courseDesc) {
+                        const desc = String(course.courseDesc);
                         const truncated = desc.length > 200 ? desc.substring(0, 200) + '...' : desc;
                         lines.push(`   Description: ${truncated}`);
                     }
@@ -169,68 +195,55 @@ const tools = {
                 }
 
                 const formattedResults = results.map((result: any, index: number) => {
-                    // Build header with source info
+                    // Build header with source and course info from normalized tables
                     const headerParts = [`[${index + 1}]`];
                     if (result.source) headerParts.push(result.source);
-                    if (result.course_code) headerParts.push(result.course_code);
+                    
+                    // Build course code from normalized fields
+                    if (result.coursePrefix && result.courseNumber) {
+                        headerParts.push(`${result.coursePrefix} ${result.courseNumber}`);
+                    }
+                    
                     const header = headerParts.join(' | ');
 
+                    const lines: string[] = [];
+
+                    // Use normalized course fields directly from the join
+                    if (result.coursePrefix && result.courseNumber) {
+                        const courseParts = [`${result.coursePrefix} ${result.courseNumber}`];
+                        if (result.courseTitle) courseParts.push(result.courseTitle);
+                        lines.push(`Course: ${courseParts.join(' - ')}`);
+                    } else if (result.title) {
+                        lines.push(`Course: ${result.title}`);
+                    }
+
+                    if (result.campusName) lines.push(`Campus: ${result.campusName}`);
+                    if (result.deptName) lines.push(`Department: ${result.deptName}`);
+                    if (result.numUnits) lines.push(`Units: ${result.numUnits}`);
+                    if (result.courseDesc) {
+                        const desc = String(result.courseDesc);
+                        const truncated = desc.length > 300 ? desc.substring(0, 300) + '...' : desc;
+                        lines.push(`Description: ${truncated}`);
+                    }
+
+                    // Check metadata object for additional fields
                     const content = result.content;
-
-                    // Helper function to extract fields from object
-                    const pick = (obj: any, candidates: string[]) => {
-                        for (const k of candidates) {
-                            if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
-                                return obj[k];
-                            }
-                        }
-                        return undefined;
-                    };
-
-                    // Handle different content types
-                    if (typeof content === 'string') {
-                        return `${header}\n${content.trim()}`;
-                    }
-
-                    if (Array.isArray(content)) {
-                        const body = content
-                            .map((c) => (typeof c === 'string' ? c : JSON.stringify(c)))
-                            .join('\n');
-                        return `${header}\n${body}`;
-                    }
-
                     if (content && typeof content === 'object') {
-                        // Extract course fields
-                        const courseCode = pick(content, ['course_code', 'course', 'courseId', 'course_num', 'course_number', 'code']);
-                        const coursePrefix = pick(content, ['course_prefix']);
-                        const courseNumber = pick(content, ['course_number']);
-                        const title = pick(content, ['course_title', 'title', 'name']);
-                        const dept = pick(content, ['dept_name', 'department', 'dept', 'division']);
-                        const units = pick(content, ['num_units', 'units', 'credits', 'credit_hours']);
-                        const desc = pick(content, ['course_desc', 'description', 'desc', 'summary', 'overview']);
+                        // Helper function to extract fields from metadata object
+                        const pick = (obj: any, candidates: string[]) => {
+                            for (const k of candidates) {
+                                if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+                                    return obj[k];
+                                }
+                            }
+                            return undefined;
+                        };
+
                         const metadata = pick(content, ['metadata', 'additional_info', 'additional', 'notes']);
                         const outcomes = pick(content, ['learner_outcomes', 'outcomes', 'learning_outcomes']);
                         const prereqs = pick(content, ['prerequisites', 'required_prep', 'required_prereq', 'prereq']);
                         const sectionNotes = pick(content, ['section_notes', 'sectionNotes', 'section', 'section_note']);
 
-                        const lines: string[] = [];
-
-                        // Course code line
-                        const courseCodeParts: string[] = [];
-                        if (courseCode) {
-                            courseCodeParts.push(String(courseCode));
-                        } else if (coursePrefix && courseNumber) {
-                            courseCodeParts.push(`${coursePrefix} ${courseNumber}`);
-                        }
-                        if (title) courseCodeParts.push(String(title));
-                        if (courseCodeParts.length) {
-                            lines.push(`Course: ${courseCodeParts.join(' - ')}`);
-                        }
-
-                        // Other fields
-                        if (dept) lines.push(`Department: ${String(dept)}`);
-                        if (units !== undefined) lines.push(`Units: ${String(units)}`);
-                        if (desc) lines.push(`Description: ${String(desc)}`);
                         if (metadata) lines.push(`Additional Info: ${String(metadata)}`);
                         
                         // Handle outcomes (array or string)
@@ -242,18 +255,17 @@ const tools = {
                         
                         if (prereqs) lines.push(`Prerequisites: ${String(prereqs)}`);
                         if (sectionNotes) lines.push(`Section Notes: ${String(sectionNotes)}`);
-
-                        // Fallback if no structured fields found
-                        if (lines.length === 0) {
-                            const fallback = pick(content, ['text', 'content', 'snippet']) || JSON.stringify(content, null, 2);
-                            return `${header}\n${String(fallback)}`;
-                        }
-
-                        return `${header}\n${lines.join('\n')}`;
                     }
 
-                    // Last resort: stringify
-                    return `${header}\n${JSON.stringify(content)}`;
+                    // Fallback if no structured fields found
+                    if (lines.length === 0) {
+                        if (typeof content === 'string') {
+                            return `${header}\n${content.trim()}`;
+                        }
+                        return `${header}\n${JSON.stringify(content, null, 2)}`;
+                    }
+
+                    return `${header}\n${lines.join('\n')}`;
                 }).join('\n\n');
 
                 return formattedResults;
@@ -290,6 +302,17 @@ export async function POST(req: Request) {
             tools,
             system: `You are a helpful university course assistant with access to the course knowledge base.
 
+DATABASE STRUCTURE:
+The system has a normalized database with three main tables:
+1. **campuses** table: Contains university/college campus information
+   - Fields: id, name, instIpeds (institution IPEDS code), description, type, website, contact info
+   - Examples: UH Manoa, Kapiolani CC, Hawaii CC, Kauai CC, UH Maui, UH West Oahu, Honolulu CC, Leeward CC, UH Hilo, PCATT
+2. **courses** table: Contains course catalog information
+   - Fields: coursePrefix (e.g., "COM", "ICS"), courseNumber (e.g., "2163", "101"), courseTitle, courseDesc, numUnits, deptName
+   - Each course is linked to a campus via campusId
+3. **embeddings** table: Contains vector embeddings for semantic search
+   - Links to both campuses and courses for context-aware retrieval
+
 HOW TO RESPOND:
 
 For greetings and casual conversation:
@@ -297,44 +320,53 @@ For greetings and casual conversation:
 - Example: "Hello! I'm doing well, thank you. I'm here to help you find course information. What courses are you interested in?"
 
 For specific course code lookups:
-- Use getCourseByCode when user mentions a specific course code (e.g., "Com 2163", "tell me about COM 2158")
-- This guarantees finding the course if it exists and returns ALL metadata fields
-- Use for questions about specific fields: credits, IPEDS, department name, course prefix/number
-- Example: "Com 2163", "what is COM 2158", "credits for Com 2187", "what is the IPEDS for Com 2036"
+- Use getCourseByCode when user mentions a specific course code (e.g., "COM 2163", "tell me about ICS 101")
+- This tool queries the courses table joined with campus data
+- Returns complete information: course title, description, units, department, campus, IPEDS code
+- Use for questions about specific fields: credits, department, campus, prerequisites
+- Example queries: "COM 2163", "what is ICS 101", "credits for COM 2187", "tell me about ENG 100"
 
 For listing/browsing courses:
 - Use listCourses tool for requests like "list all courses", "show me courses", "what courses are available"
-- Can filter by department or campus if user specifies
+- Can filter by department or campus name if user specifies
+- Returns results from the courses table with campus information
 - Present results in a clear, organized way
 - If many results, suggest being more specific
 - IMPORTANT: Only call this tool ONCE per response - do not repeat calls
 
-For listing universities / campuses (treat every campus as a university):
-- Users may ask to "list universities", "what universities are included", or "which campuses are available". These requests are course-related and allowed.
-- Treat every distinct campus value and every distinct department name (metadata->>'dept_name') as a university entry. Normalize common abbreviations and alternate names (for example, treat "PCATT" and "Pacific Center for Advanced Technology Training" as the same university). Prefer the longer, more descriptive name when both appear.
-- Preferred method: call searchKnowledgeBase once with queries that surface campus and department fields (examples: "campus", "dept_name", "department", "PCATT"). Inspect returned results for fields such as result.content.campus, result.content.dept_name, result.source, and result.course_code. Extract and normalize distinct campus and dept_name values and present a concise numbered list of the unique universities found. When possible, include the number of courses found for each (for example: "1) Kauai Community College — 42 courses").
-- Fallback: if searchKnowledgeBase does not return enough coverage, call listCourses once with a larger limit (for example, limit=1000) and aggregate unique values from the campus field and the metadata->>'dept_name' field across results to build and normalize the campus/university list.
-- IMPORTANT: Make only one tool call for the listing action in a single response (either searchKnowledgeBase or listCourses) and avoid calling the same tool multiple times.
+For listing universities/campuses:
+- Users may ask to "list universities", "what universities are included", or "which campuses are available"
+- The system includes multiple University of Hawaii campuses and institutions:
+  * UH Manoa, UH Hilo, UH West Oahu (4-year universities)
+  * Kapiolani CC, Hawaii CC, Honolulu CC, Kauai CC, Leeward CC, UH Maui (community colleges)
+  * PCATT (Pacific Center for Advanced Technology Training)
+- Use listCourses with a reasonable limit (e.g., 100) and aggregate unique campus names from results
+- Or use searchKnowledgeBase with query "campus university" to get campus information
+- Present as a bulleted list with campus names
+- IMPORTANT: Make only ONE tool call for listing
 
-For specific course searches:
+For topic-based searches:
 - Use searchKnowledgeBase for topic-based searches, not exact course codes
-- Examples: "AWS courses", "courses about networking", "cybersecurity training"
+- Examples: "AWS courses", "courses about networking", "cybersecurity training", "computer science classes"
+- This tool uses semantic search across embeddings linked to courses and campuses
 - Always cite results with [1], [2], etc.
+- Best for discovering courses by subject matter or keywords
 
 For course-related questions:
-- Choose the appropriate tool based on the question type
-- getCourseByCode: When user asks about a specific course code or its attributes
-- listCourses: When user wants to browse or see multiple courses
-- searchKnowledgeBase: When user searches by topic/keyword
+- Choose the appropriate tool based on the question type:
+  * getCourseByCode: When user asks about a specific course code or its attributes
+  * listCourses: When user wants to browse or see multiple courses (can filter by campus/department)
+  * searchKnowledgeBase: When user searches by topic/keyword
 - If results found: Answer concisely with citations when appropriate
 - If no results: Explain you couldn't find that specific information and suggest alternatives
 
 IMPORTANT RULES:
 - When asked about credits/units for a course, use getCourseByCode to get complete info
 - If credits are "Not specified", clearly state that
-- For metadata fields (IPEDS, dept_name, etc.), use getCourseByCode
+- For campus/department information, tools now query the normalized tables with proper joins
 - Never call the same tool twice in one response
 - Be conversational and helpful, not robotic
+- All course data is now properly normalized - course codes are split into prefix + number
 
 For non-course questions (sports, weather, celebrities, general facts):
 - Politely decline and redirect to course information
@@ -349,7 +381,8 @@ RULES:
 - Keep responses concise (2-5 sentences typically)
 - Guide users toward more specific queries if their question is too broad
 - When credits/units are not available, clearly state "Not specified" rather than saying you can't find the info
-- Prefer using bullted style lists when tasked with listing things.`,
+- Prefer using bulleted style lists when tasked with listing things
+- Remember: the database is now normalized with separate campus and course tables - use the tools that query these properly`,
             stopWhen: stepCountIs(2),
         });
 
