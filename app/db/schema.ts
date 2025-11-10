@@ -4,11 +4,10 @@ import {
   text,
   timestamp,
   serial,
+  integer,
   vector,
   index,
   jsonb,
-  integer,
-  pgEnum,
 } from "drizzle-orm/pg-core";
 
 /* User / Auth tables */
@@ -75,21 +74,21 @@ export const source = pgTable("sources", {
 export const embedding = pgTable("embeddings", {
   id: serial("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => source.id, { onDelete: "cascade" }),
-  refId: text("ref_id"),              // record ID in source (e.g., courseCode)
-  title: text("title"),               // human-readable title
-  campus: text("campus"),             // optional display info
-  courseCode: text("course_code"),    // optional for courses
-  content: text("content"),           // the text used to create embedding
-  metadata: jsonb("metadata"),        // store the full original object
-  contentHash: text("content_hash"),  // optional deduplication
+  refId: text("ref_id"),
+  title: text("title"),
+  campusId: text("campus_id").references(() => campus.id),
+  courseId: integer("course_id").references(() => course.id),
+  content: text("content"),
+  metadata: jsonb("metadata"),
+  contentHash: text("content_hash"),
   embedding: vector("embedding", { dimensions: 1536 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("embedding_vector_idx").using("ivfflat", table.embedding.op("vector_cosine_ops")),
-  ]
-);
+},
+(table) => [
+  index("embedding_vector_idx").using("ivfflat", table.embedding.op("vector_cosine_ops")),
+]);
+
 
 /* Chat / Message Persistence */
 
@@ -109,4 +108,54 @@ export const message = pgTable("messages", {
   role: text("role").notNull(), // 'user' | 'assistant'
   content: jsonb("content").notNull(), // store complete UIMessage parts array
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/* Pathway / Workflow tables */
+
+// Campuses 
+export const campus = pgTable("campuses", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  instIpeds: text("inst_ipeds"),
+  description: text("description"),
+  aliases: jsonb("aliases"),
+  type: text("type"),
+  website: text("website"),
+  metadata: jsonb("metadata"),
+});
+
+// Courses offered by campuses
+export const course = pgTable("courses", {
+  id: serial("id").primaryKey(),
+  campusId: text("campus_id").notNull().references(() => campus.id, { onDelete: "cascade" }),
+  coursePrefix: text("course_prefix").notNull(),
+  courseNumber: text("course_number").notNull(),
+  courseTitle: text("course_title"),
+  courseDesc: text("course_desc"),
+  numUnits: text("num_units"),
+  deptName: text("dept_name"),
+});
+
+// Majors offered by campuses
+export const major = pgTable("majors", {
+  id: serial("id").primaryKey(),
+  campusId: text("campus_id").notNull().references(() => campus.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+});
+
+// Degree or Certificate codes of majors (B.S., B.A., UCert, CA, CO, etc.)
+export const degree = pgTable("degrees", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name"),
+  level: text("level"), // e.g. 'baccalaureate', 'associate', 'certificate', 'graduate'
+});
+
+// many-to-many table for majors and degrees
+export const majorDegree = pgTable("major_degrees", {
+  id: serial("id").primaryKey(),
+  majorId: integer("major_id").notNull().references(() => major.id, { onDelete: "cascade" }),
+  degreeId: integer("degree_id").notNull().references(() => degree.id, { onDelete: "cascade" }),
+  requiredCredits: integer("required_credits"),
+  typicalDuration: integer("typical_duration"), // duration in months
 });
