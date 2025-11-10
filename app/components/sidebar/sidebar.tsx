@@ -37,11 +37,6 @@ const data = {
             icon: Map,
         },
         {
-            title: "Majors",
-            url: "/Majors",
-            icon: GraduationCap,
-        },
-        {
             title: "Careers",
             url: "/Careers",
             icon: Briefcase,
