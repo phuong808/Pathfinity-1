@@ -1,3 +1,5 @@
+// run with: npx tsx scripts/seed/seed-courses.ts <path-to-courses.json>
+
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 import * as fs from 'fs/promises';
@@ -22,10 +24,10 @@ const db = drizzle(sql);
 
 interface CourseData {
   course_prefix: string;
-  course_number: string;
+  course_number: string | number;
   course_title: string;
   course_desc: string;
-  num_units: string;
+  num_units: string | number;
   dept_name: string;
   inst_ipeds: number;
   metadata: string;
@@ -78,6 +80,7 @@ function mapFilenameToCampusId(filePath: string): string | null {
     'kauai_courses': 'kauai_cc',
     'west_oahu_courses': 'uh_west_oahu',
     'pcatt_courses': 'pcatt',
+    'windward_courses': 'windward_cc',
   };
 
   return mapping[base] || null;
@@ -102,7 +105,7 @@ async function upsertCourse(
   courseData: CourseData
 ): Promise<number> {
   const prefix = courseData.course_prefix.trim();
-  const number = courseData.course_number.trim();
+  const number = String(courseData.course_number).trim();
 
   // Check if course already exists
   const existing = await db
@@ -130,7 +133,7 @@ async function upsertCourse(
       courseNumber: number,
       courseTitle: courseData.course_title || null,
       courseDesc: courseData.course_desc || null,
-      numUnits: courseData.num_units || null,
+      numUnits: String(courseData.num_units) || null,
       deptName: courseData.dept_name || null,
     })
     .returning();
@@ -329,7 +332,7 @@ async function ingestCourseData(
 // CLI execution
 const args = process.argv.slice(2);
 if (args.length === 0) {
-  console.error('Usage: npx tsx scripts/ingest/ingest-json.ts <path-to-json-file> [--force] [--batch-size=N]');
+  console.error('Usage: npx tsx scripts/seed/seed-courses.ts <path-to-json-file> [--force] [--batch-size=N]');
   console.error('  --force: Process all courses even if they already exist');
   console.error('  --batch-size=N: Set batch size (default: 20)');
   process.exit(1);

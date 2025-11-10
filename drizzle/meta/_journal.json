@@ -57,6 +57,20 @@
       "when": 1762691981487,
       "tag": "0007_slow_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1762755644741,
+      "tag": "0008_normal_magma",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1762759517471,
+      "tag": "0009_gigantic_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

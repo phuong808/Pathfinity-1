@@ -78,7 +78,6 @@ export const embedding = pgTable("embeddings", {
   title: text("title"),
   campusId: text("campus_id").references(() => campus.id),
   courseId: integer("course_id").references(() => course.id),
-  majorId: integer("major_id").references(() => major.id),
   content: text("content"),
   metadata: jsonb("metadata"),
   contentHash: text("content_hash"),
@@ -122,7 +121,6 @@ export const campus = pgTable("campuses", {
   aliases: jsonb("aliases"),
   type: text("type"),
   website: text("website"),
-  contact: jsonb("contact"),
   metadata: jsonb("metadata"),
 });
 
@@ -142,8 +140,22 @@ export const course = pgTable("courses", {
 export const major = pgTable("majors", {
   id: serial("id").primaryKey(),
   campusId: text("campus_id").notNull().references(() => campus.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),   
-  department: text("department"),
-  credits: integer("credits"),
-  duration: text("duration"),
+  title: text("title").notNull(),
+});
+
+// Degree or Certificate codes of majors (B.S., B.A., UCert, CA, CO, etc.)
+export const degree = pgTable("degrees", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name"),
+  level: text("level"), // e.g. 'baccalaureate', 'associate', 'certificate', 'graduate'
+});
+
+// many-to-many table for majors and degrees
+export const majorDegree = pgTable("major_degrees", {
+  id: serial("id").primaryKey(),
+  majorId: integer("major_id").notNull().references(() => major.id, { onDelete: "cascade" }),
+  degreeId: integer("degree_id").notNull().references(() => degree.id, { onDelete: "cascade" }),
+  requiredCredits: integer("required_credits"),
+  typicalDuration: integer("typical_duration"), // duration in months
 });
