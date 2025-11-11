@@ -19,7 +19,7 @@ export const CourseCard = React.memo(({ course }: CourseCardProps) => {
           <p className="text-gray-900 font-semibold">{course.course_title}</p>
         </div>
         <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-          {course.num_units} {course.num_units === '1' ? 'unit' : 'units'}
+          {course.num_units} {course.num_units === '1' ? 'credit' : 'credits'}
         </span>
       </div>
       <p className="text-gray-700 mb-3">{course.course_desc}</p>

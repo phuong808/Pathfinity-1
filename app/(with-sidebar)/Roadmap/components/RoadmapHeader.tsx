@@ -75,6 +75,11 @@ export function RoadmapHeader({
               Explore Majors at {CAMPUSES.find(c => c.id === selectedCampus)?.displayName}
             </p>
           )}
+          {viewMode === 'courses' && !selectedMajor && !selectedPathway && (
+            <p className="text-sm text-blue-100 mt-2 font-medium">
+              Explore courses at {CAMPUSES.find(c => c.id === selectedCampus)?.displayName}
+            </p>
+          )}
         </div>
         <div className="flex gap-2 items-center">
           {/* Campus Selector */}

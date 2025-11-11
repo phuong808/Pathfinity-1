@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/app/components/ui/button";
 import { CourseCard } from './CourseCard';
 import { CourseCatalog } from '../types';
@@ -16,6 +16,26 @@ export function DepartmentCoursesView({
   loadingCourses,
   onBack,
 }: DepartmentCoursesViewProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter courses based on search term
+  const filteredCourses = useMemo(() => {
+    if (!searchTerm.trim()) return departmentCourses;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return departmentCourses.filter(course => {
+      const courseCode = `${course.course_prefix}${course.course_number}`.toLowerCase();
+      const courseTitle = course.course_title?.toLowerCase() || '';
+      const courseDesc = course.course_desc?.toLowerCase() || '';
+      
+      return (
+        courseCode.includes(searchLower) ||
+        courseTitle.includes(searchLower) ||
+        courseDesc.includes(searchLower)
+      );
+    });
+  }, [departmentCourses, searchTerm]);
+
   if (!selectedDepartment) {
     return null;
   }
@@ -69,7 +89,7 @@ export function DepartmentCoursesView({
 
   return (
     <div className="p-8">
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-4">
         <Button
           variant="outline"
           size="sm"
@@ -78,20 +98,46 @@ export function DepartmentCoursesView({
         >
           ← Back to Departments
         </Button>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">{selectedDepartment}</h2>
-          <p className="text-gray-600">{departmentCourses.length} courses available</p>
-        </div>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold text-gray-900">{selectedDepartment}</h2>
       </div>
       
-      <div className="grid gap-4">
-        {departmentCourses.map((course, index) => (
-          <CourseCard 
-            key={`${course.course_prefix}-${course.course_number}-${index}`}
-            course={course}
-          />
-        ))}
+      {/* Search Bar */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search for a course..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+        />
       </div>
+      
+      <div className="mb-4 text-sm text-gray-600">
+        Found {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''}
+        {searchTerm && ` (${departmentCourses.length} total)`}
+      </div>
+      
+      {filteredCourses.length === 0 ? (
+        <div className="text-center p-12 bg-white rounded-2xl shadow-lg">
+          <div className="text-6xl mb-4">🔍</div>
+          <p className="text-gray-700 text-xl font-semibold mb-2">No Courses Found</p>
+          <p className="text-gray-500 text-sm">
+            Try a different search term
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {filteredCourses.map((course, index) => (
+            <CourseCard 
+              key={`${course.course_prefix}-${course.course_number}-${index}`}
+              course={course}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
