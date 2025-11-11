@@ -182,11 +182,8 @@ async function seed() {
         id: c.id,
         name: c.name,
         instIpeds: c.instIpeds,
-        description: c.description,
         aliases: c.aliases as any,
         type: c.type,
-        website: c.website,
-        metadata: c.metadata as any,
       })
       .onConflictDoNothing();
     console.log('Upserted campus', c.id);

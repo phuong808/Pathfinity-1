@@ -1,0 +1,160 @@
+import { tool } from 'ai';
+import { z } from 'zod';
+import { db } from '@/app/db/index';
+import { campus as cam } from '@/app/db/schema';
+import { sql } from 'drizzle-orm';
+import { 
+  searchSchoolByIpeds, 
+  formatCurrency, 
+  formatPercent, 
+  formatNumber,
+  getOwnershipLabel,
+} from '@/lib/college-scorecard-client';
+
+export const getCampusInfo = tool({
+  description: "Get detailed general information about a UH campus: location, website, student population, costs, admission stats, outcomes. Use when asked about campus overview, student body, or general campus facts.",
+  inputSchema: z.object({
+    campusName: z.string().describe("Name of the campus (e.g., 'Windward Community College', 'UH Manoa')"),
+  }),
+  execute: async ({ campusName }) => {
+    try {
+      // Normalize the search term: remove special chars, normalize okina
+      const normalizedSearch = campusName
+        .toLowerCase()
+        .replace(/ʻ/g, "'") // Replace okina with apostrophe
+        .replace(/['']/g, '') // Remove apostrophes
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // First, lookup campus in DB to get IPEDS ID
+      // Try multiple matching strategies
+      const campusResult = await db
+        .select({
+          name: cam.name,
+          type: cam.type,
+          instIpeds: cam.instIpeds,
+          aliases: cam.aliases,
+        })
+        .from(cam)
+        .where(sql`(
+          ${cam.name} ILIKE ${`%${campusName}%`} OR
+          LOWER(REPLACE(REPLACE(${cam.name}, 'ʻ', ''), '''', '')) LIKE ${`%${normalizedSearch}%`} OR
+          ${cam.aliases}::text ILIKE ${`%${campusName}%`}
+        )`)
+        .limit(1);
+
+      if (!campusResult?.length) {
+        return `Couldn't find "${campusName}" in the UH system. Try getCampuses to see all available campuses?`;
+      }
+
+      const campus = campusResult[0];
+
+      if (!campus.instIpeds) {
+        return `**${campus.name}**\n\nDetailed information not available for this campus yet.`;
+      }
+
+      // Fetch from College Scorecard API
+      const info = await searchSchoolByIpeds(campus.instIpeds);
+
+      if (!info) {
+        return `**${campus.name}**\n\nCouldn't retrieve detailed information right now. Try again later?`;
+      }
+
+      // Build response with available data
+      const lines: (string | false | null)[] = [
+        `**${info.name}**`,
+        '',
+      ];
+
+      // Location & Website - full address
+      const locationParts = [];
+      if (info.city) locationParts.push(info.city);
+      if (info.state) locationParts.push(info.state);
+      if (info.zip) locationParts.push(info.zip);
+      
+      if (locationParts.length) {
+        lines.push(`📍 **Location:** ${locationParts.join(', ')}`);
+      }
+      
+      const ownershipLabel = getOwnershipLabel(info.ownership);
+      if (ownershipLabel) {
+        lines.push(`🏛️ **Type:** ${ownershipLabel} ${campus.type ? `(${campus.type.replace('_', ' ')})` : ''}`);
+      }
+      
+      if (info.website) {
+        lines.push(`🌐 **Website:** ${info.website}`);
+      }
+      
+      if (locationParts.length || info.website || ownershipLabel) lines.push('');
+
+      // Student Body - only show if there's actual enrollment data
+      if (info.size || info.undergradSize) {
+        lines.push('👥 **Student Body:**');
+        if (info.size) {
+          lines.push(`  • Total enrollment: ${formatNumber(info.size)} students`);
+        } else if (info.undergradSize) {
+          lines.push(`  • Undergraduates: ${formatNumber(info.undergradSize)}`);
+        }
+        if (info.partTimeShare != null && info.partTimeShare > 0) {
+          lines.push(`  • Part-time students: ${formatPercent(info.partTimeShare)}`);
+        }
+        lines.push('');
+      }
+
+      // Costs
+      if (info.avgCostPerYear || info.tuitionInState || info.tuitionOutOfState) {
+        lines.push('💰 **Costs:**');
+        if (info.avgCostPerYear) lines.push(`  • Average net price: ${formatCurrency(info.avgCostPerYear)}/year`);
+        if (info.tuitionInState) lines.push(`  • In-state tuition: ${formatCurrency(info.tuitionInState)}/year`);
+        if (info.tuitionOutOfState) lines.push(`  • Out-of-state tuition: ${formatCurrency(info.tuitionOutOfState)}/year`);
+        lines.push('');
+      }
+
+      // Admissions
+      if (info.admissionRate || info.satAverage || info.actMedian) {
+        lines.push('📊 **Admissions:**');
+        if (info.admissionRate) lines.push(`  • Admission rate: ${formatPercent(info.admissionRate)}`);
+        if (info.satAverage) lines.push(`  • Average SAT: ${Math.round(info.satAverage)}`);
+        if (info.actMedian) lines.push(`  • Median ACT: ${Math.round(info.actMedian)}`);
+        lines.push('');
+      }
+
+      // Outcomes
+      if (info.completionRate || info.retentionRate || info.medianEarnings) {
+        lines.push('🎓 **Outcomes:**');
+        if (info.retentionRate) lines.push(`  • Retention rate: ${formatPercent(info.retentionRate)}`);
+        if (info.completionRate) lines.push(`  • 4-year completion rate: ${formatPercent(info.completionRate)}`);
+        if (info.medianEarnings) lines.push(`  • Median earnings (10 yrs after): ${formatCurrency(info.medianEarnings)}`);
+        lines.push('');
+      }
+
+      // Demographics (only if significant data present)
+      const demographics = [
+        info.percentWhite && info.percentWhite > 0.01 ? `White: ${formatPercent(info.percentWhite)}` : null,
+        info.percentAsian && info.percentAsian > 0.01 ? `Asian: ${formatPercent(info.percentAsian)}` : null,
+        info.percentPacificIslander && info.percentPacificIslander > 0.01 ? `Pacific Islander: ${formatPercent(info.percentPacificIslander)}` : null,
+        info.percentHispanic && info.percentHispanic > 0.01 ? `Hispanic: ${formatPercent(info.percentHispanic)}` : null,
+        info.percentBlack && info.percentBlack > 0.01 ? `Black: ${formatPercent(info.percentBlack)}` : null,
+        info.percentNativeAmerican && info.percentNativeAmerican > 0.01 ? `Native American: ${formatPercent(info.percentNativeAmerican)}` : null,
+        info.percentTwoOrMore && info.percentTwoOrMore > 0.01 ? `Two or more: ${formatPercent(info.percentTwoOrMore)}` : null,
+      ].filter(Boolean);
+
+      if (demographics.length > 0) {
+        lines.push('🌈 **Demographics:**');
+        demographics.forEach(d => lines.push(`  • ${d}`));
+      }
+
+      const response = lines.filter(Boolean).join('\n');
+      
+      // If we got very little data, add a helpful note
+      if (lines.length < 8) {
+        return response + '\n\n_Limited data available for this campus._';
+      }
+
+      return response;
+    } catch (error) {
+      console.error('getCampusInfo error:', error);
+      return 'Having trouble getting campus information. Try again?';
+    }
+  }
+});
