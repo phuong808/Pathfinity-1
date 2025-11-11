@@ -54,7 +54,7 @@ const data = {
 export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { data: session } = useSession()
     const router = useRouter()
-    const { state } = useSidebar()
+    const { state, isMobile } = useSidebar()
 
     const user = session?.user
         ? {
@@ -65,46 +65,55 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
         : null
 
     return (
-        <Sidebar collapsible="icon" {...props}>
-          <SidebarHeader className="relative">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <div className="flex items-center justify-between w-full group/logo">
-                  <SidebarMenuButton
-                    asChild
-                    className="data-[slot=sidebar-menu-button]:!p-1.5 flex-1"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => router.push('/')}
-                      className="flex items-center gap-2"
+        <>
+          <Sidebar collapsible="icon" className="group/sidebar-hover" {...props}>
+            <SidebarHeader className="relative">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <div className="flex items-center justify-between w-full">
+                    <SidebarMenuButton
+                      asChild
+                      className="data-[slot=sidebar-menu-button]:!p-1.5 flex-1"
                     >
-                      <Infinity className="h-5 w-5" />
-                      <span className="text-base font-semibold">Pathfinity</span>
-                    </button>
-                  </SidebarMenuButton>
-                  
-                  {/* Toggle button - visible when expanded, or on hover when collapsed */}
-                  <SidebarTrigger
-                    className={`${
-                      state === "collapsed" 
-                        ? "opacity-0 group-hover/logo:opacity-100 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2" 
-                        : "opacity-100 relative"
-                    } transition-opacity duration-200`}
-                  />
-                </div>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarHeader>
+                      <button
+                        type="button"
+                        onClick={() => router.push('/')}
+                        className="flex items-center gap-2"
+                      >
+                        <Infinity className="h-5 w-5" />
+                        <span className="text-base font-semibold">Pathfinity</span>
+                      </button>
+                    </SidebarMenuButton>
+                    
+                    {/* Toggle button - visible when expanded or on hover over sidebar when collapsed on desktop */}
+                    {!isMobile && (
+                      <SidebarTrigger
+                        className={`${
+                          state === "collapsed" 
+                            ? "opacity-0 group-hover/sidebar-hover:opacity-100 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-sidebar hover:bg-sidebar-accent rounded-md" 
+                            : "opacity-100 relative"
+                        } transition-opacity duration-200`}
+                      />
+                    )}
+                  </div>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarHeader>
 
-          <SidebarContent>
-            <NavMain items={data.navMain} />
-            <ChatHistory userId={session?.user?.id} />
-          </SidebarContent>
+            <SidebarContent>
+              <NavMain items={data.navMain} />
+              <ChatHistory userId={session?.user?.id} />
+            </SidebarContent>
 
-          <SidebarFooter>
-            <NavUser user={user} />
-          </SidebarFooter>
-        </Sidebar>
+            <SidebarFooter>
+              <NavUser user={user} />
+            </SidebarFooter>
+          </Sidebar>
+
+          {/* Mobile trigger - always visible, positioned fixed */}
+          {isMobile && (
+            <SidebarTrigger className="fixed top-4 left-4 z-50 bg-sidebar" />
+          )}
+        </>
     )
 }
