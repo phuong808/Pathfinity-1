@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "motion/react"
 
 export default function StepIndicator({ step }: { step: number }) {
-  const labels = ["Career", "College", "Interests", "Skills"]
+  const labels = ["Career", "College", "Interests", "Skills", "Review"]
 
   return (
     <aside className="mb-6 md:mb-0">

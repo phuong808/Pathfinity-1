@@ -22,6 +22,21 @@ export const user = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// User profiles / pathways
+export const profile = pgTable("profiles", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  career: text("career"),
+  college: text("college"),
+  major: text("major"),
+  degree: text("degree"),
+  interests: jsonb("interests"),
+  skills: jsonb("skills"),
+  roadmap: jsonb("roadmap"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const session = pgTable("sessions", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
