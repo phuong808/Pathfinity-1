@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "../ui/sidebar"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 export function NavMain({
   items,
@@ -21,27 +21,40 @@ export function NavMain({
   }[]
 }) {
   const router = useRouter()
+  const pathname = usePathname()
+  
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title} asChild>
-                <button
-                  type="button"
-                  onClick={() => router.push(item.url)}
-                  className="flex items-center gap-2 w-full text-left"
+          {items.map((item) => {
+            const isActive = pathname === item.url
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  tooltip={item.title} 
+                  asChild
+                  isActive={isActive}
                 >
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </button>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+                  <button
+                    type="button"
+                    onClick={() => router.push(item.url)}
+                    className="flex items-center gap-2 w-full text-left"
+                  >
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
 
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Create Pathway" asChild>
+            <SidebarMenuButton 
+              tooltip="Create Pathway" 
+              asChild
+              isActive={pathname === '/CreatePathway'}
+            >
                 <button
                 type="button"
                 onClick={() => router.push('/CreatePathway')}
