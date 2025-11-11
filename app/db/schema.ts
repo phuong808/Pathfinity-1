@@ -156,3 +156,14 @@ export const majorDegree = pgTable("major_degrees", {
   requiredCredits: integer("required_credits"),
   typicalDuration: integer("typical_duration"), // duration in months
 });
+
+// Pathway table to store degree pathway structures
+export const pathway = pgTable("pathways", {
+  id: text("id").primaryKey(),
+  programName: text("program_name").notNull(),
+  institution: text("institution"),
+  totalCredits: text("total_credits"),
+  pathwayData: jsonb("pathway_data"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

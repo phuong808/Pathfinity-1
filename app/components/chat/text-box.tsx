@@ -35,7 +35,6 @@ type Props = {
   setModel: (v: string) => void
   status: any
   className?: string
-  onStartVoice?: () => void
 }
 
 export function TextBox({
@@ -47,7 +46,6 @@ export function TextBox({
   setModel,
   status,
   className,
-  onStartVoice,
 }: Props) {
   return (
     
@@ -92,10 +90,7 @@ export function TextBox({
               </PromptInputModelSelectContent>
             </PromptInputModelSelect>
 
-            <PromptInputSpeechButton
-              className="ml-auto border rounded-full text-black"
-              onClick={() => onStartVoice && onStartVoice()}
-            />
+            <PromptInputSpeechButton className="ml-auto border rounded-full text-black" />
           </PromptInputTools>
           <PromptInputSubmit status={status} className="ml-2 rounded-full"/>
         </PromptInputFooter>
