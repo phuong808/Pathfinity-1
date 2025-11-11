@@ -3,22 +3,28 @@ import { z } from 'zod';
 import { db } from '@/app/db/index';
 import { major as m, campus as cam } from '@/app/db/schema';
 import { sql, eq } from 'drizzle-orm';
+import { normalizeHawaiian } from '@/lib/normalize-hawaiian';
 
 export const getMajor = tool({
-    description: "Search majors by name/keyword OR list all at a campus. Use for 'what majors' questions.",
+    description: "Search for majors by keyword or list all majors at a campus. Use when asked about majors, programs, or degrees of study.",
     inputSchema: z.object({
-        query: z.string().optional().describe("Major name/keyword OR empty to list all"),
-        campus: z.string().optional().describe("Filter by campus name"),
-        limit: z.number().optional().default(20),
+        query: z.string().optional().describe("Major name or keyword (e.g., 'computer', 'business', 'engineering')"),
+        campus: z.string().optional().describe("Filter by campus name (e.g., 'UH Manoa', 'Leeward CC')"),
+        limit: z.number().optional().default(30),
     }),
-    execute: async ({ query, campus, limit = 20 }) => {
+    execute: async ({ query, campus, limit = 30 }) => {
         try {
             const conditions = [];
             if (query?.trim()) {
                 conditions.push(sql`${m.title} ILIKE ${`%${query}%`}`);
             }
             if (campus) {
-                conditions.push(sql`${cam.name} ILIKE ${`%${campus}%`}`);
+                // Normalize Hawaiian characters for matching (ā→a, ʻ removed, etc.)
+                // Also check aliases field which includes common abbreviations like "UH Manoa"
+                conditions.push(sql`(
+                    translate(LOWER(${cam.name}), 'āēīōūʻ''''', 'aeiou') LIKE ${`%${normalizeHawaiian(campus)}%`} OR
+                    ${cam.aliases}::text ILIKE ${`%${campus}%`}
+                )`);
             }
 
             const majors = await db
@@ -34,17 +40,29 @@ export const getMajor = tool({
                 .limit(limit);
 
             if (!majors?.length) {
-                return `No majors found${query ? ` for "${query}"` : ''}${campus ? ` at ${campus}` : ''}. Try different keywords?`;
+                return {
+                    found: false,
+                    message: `No majors found${query ? ` matching "${query}"` : ''}${campus ? ` at ${campus}` : ''}. Try different keywords or check the campus name.`,
+                };
             }
 
             const list = majors.map((m, i) => 
                 `${i + 1}. **${m.title}**${m.campus ? ` @ ${m.campus}` : ''}`
             ).join('\n');
 
-            return `Found ${majors.length} major${majors.length > 1 ? 's' : ''}:\n\n${list}`;
+            return {
+                found: true,
+                count: majors.length,
+                majors: majors,
+                formatted: `Found ${majors.length} major${majors.length > 1 ? 's' : ''}:\n\n${list}`,
+            };
         } catch (error) {
             console.error('getMajor error:', error);
-            return 'Having trouble finding majors. Try again?';
+            return {
+                found: false,
+                error: true,
+                message: 'I\'m having trouble searching for majors right now. Please try again in a moment.',
+            };
         }
     }
 });

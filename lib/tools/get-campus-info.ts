@@ -10,6 +10,7 @@ import {
   formatNumber,
   getOwnershipLabel,
 } from '@/lib/college-scorecard-client';
+import { normalizeHawaiian } from '@/lib/normalize-hawaiian';
 
 export const getCampusInfo = tool({
   description: "Get detailed general information about a UH campus: location, website, student population, costs, admission stats, outcomes. Returns structured data with emoji sections. IMPORTANT: After calling this tool, the LLM should add a brief engaging intro (1-2 sentences) about the campus BEFORE showing the data.",
@@ -18,16 +19,8 @@ export const getCampusInfo = tool({
   }),
   execute: async ({ campusName }) => {
     try {
-      // Normalize the search term: remove special chars, normalize okina
-      const normalizedSearch = campusName
-        .toLowerCase()
-        .replace(/ʻ/g, "'") // Replace okina with apostrophe
-        .replace(/['']/g, '') // Remove apostrophes
-        .replace(/\s+/g, ' ')
-        .trim();
-
       // First, lookup campus in DB to get IPEDS ID
-      // Try multiple matching strategies
+      // Use centralized normalization + alias matching
       const campusResult = await db
         .select({
           name: cam.name,
@@ -37,27 +30,37 @@ export const getCampusInfo = tool({
         })
         .from(cam)
         .where(sql`(
-          ${cam.name} ILIKE ${`%${campusName}%`} OR
-          LOWER(REPLACE(REPLACE(${cam.name}, 'ʻ', ''), '''', '')) LIKE ${`%${normalizedSearch}%`} OR
+          translate(LOWER(${cam.name}), 'āēīōūʻ''''', 'aeiou') LIKE ${`%${normalizeHawaiian(campusName)}%`} OR
           ${cam.aliases}::text ILIKE ${`%${campusName}%`}
         )`)
         .limit(1);
 
       if (!campusResult?.length) {
-        return `Couldn't find "${campusName}" in the UH system. Try getCampuses to see all available campuses?`;
+        return {
+          found: false,
+          message: `I couldn't find "${campusName}" in the UH system. Try checking the campus name or use getCampuses to see all available campuses.`,
+        };
       }
 
       const campus = campusResult[0];
 
       if (!campus.instIpeds) {
-        return `**${campus.name}**\n\nDetailed information not available for this campus yet.`;
+        return {
+          found: true,
+          campusName: campus.name,
+          formatted: `**${campus.name}**\n\nDetailed information is not available for this campus yet.`,
+        };
       }
 
       // Fetch from College Scorecard API
       const info = await searchSchoolByIpeds(campus.instIpeds);
 
       if (!info) {
-        return `**${campus.name}**\n\nCouldn't retrieve detailed information right now. Try again later?`;
+        return {
+          found: true,
+          campusName: campus.name,
+          formatted: `**${campus.name}**\n\nI couldn't retrieve detailed information right now. Please try again in a moment.`,
+        };
       }
 
       // Build response with available data
@@ -147,14 +150,23 @@ export const getCampusInfo = tool({
       const response = lines.filter(Boolean).join('\n');
       
       // If we got very little data, add a helpful note
-      if (lines.length < 8) {
-        return response + '\n\n_Limited data available for this campus._';
-      }
+      const finalResponse = lines.length < 8 
+        ? response + '\n\n_Limited data available for this campus._'
+        : response;
 
-      return response;
+      return {
+        found: true,
+        campusName: info.name,
+        formatted: finalResponse,
+        data: info,
+      };
     } catch (error) {
       console.error('getCampusInfo error:', error);
-      return 'Having trouble getting campus information. Try again?';
+      return {
+        found: false,
+        error: true,
+        message: 'I\'m having trouble getting campus information right now. Please try again in a moment.',
+      };
     }
   }
 });

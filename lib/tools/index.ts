@@ -5,3 +5,4 @@ export { getMajor } from './get-major';
 export { getMajorDetails } from './get-major-details';
 export { getDegrees } from './get-degrees';
 export { getCampusInfo } from './get-campus-info';
+export { parsePrereqs } from './parse-prereqs';
