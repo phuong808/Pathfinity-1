@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/app/components/ui/button";
 import { BookOpen, GraduationCap } from "lucide-react";
-import { CAMPUSES } from "@/lib/course-mapper";
 import { ViewMode } from '../types';
 
 interface DepartmentsViewProps {
@@ -15,7 +14,6 @@ interface DepartmentsViewProps {
 export function DepartmentsView({
   departments,
   loadingDepartments,
-  selectedCampus,
   onDepartmentSelect,
   onViewModeChange,
 }: DepartmentsViewProps) {
@@ -33,13 +31,6 @@ export function DepartmentsView({
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Browse Departments</h2>
-        <p className="text-gray-600">
-          Select a department to view all available courses at {CAMPUSES.find(c => c.id === selectedCampus)?.displayName}
-        </p>
-      </div>
-
       {/* Search Bar */}
       <div className="mb-6">
         <input
