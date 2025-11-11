@@ -12,7 +12,7 @@ import {
 } from '@/lib/college-scorecard-client';
 
 export const getCampusInfo = tool({
-  description: "Get detailed general information about a UH campus: location, website, student population, costs, admission stats, outcomes. Use when asked about campus overview, student body, or general campus facts.",
+  description: "Get detailed general information about a UH campus: location, website, student population, costs, admission stats, outcomes. Returns structured data with emoji sections. IMPORTANT: After calling this tool, the LLM should add a brief engaging intro (1-2 sentences) about the campus BEFORE showing the data.",
   inputSchema: z.object({
     campusName: z.string().describe("Name of the campus (e.g., 'Windward Community College', 'UH Manoa')"),
   }),
