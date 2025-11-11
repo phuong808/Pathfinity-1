@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "cleanup-duplicates": "tsx scripts/run-cleanup.ts",
-    "ingest-pathways": "tsx scripts/ingest/ingest-pathways.ts"
+    "ingest-pathways": "tsx scripts/ingest/ingest-pathways.ts",
+    "seed-internships": "tsx scripts/seed/seed-internships.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.58",
