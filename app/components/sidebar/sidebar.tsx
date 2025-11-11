@@ -37,14 +37,14 @@ const data = {
             icon: Map,
         },
         {
-            title: "Careers",
-            url: "/Careers",
-            icon: Briefcase,
+            title: "Mentors",
+            url: "/Mentors",
+            icon: User,
         },
         {
-            title: "People",
-            url: "/People",
-            icon: User,
+            title: "Internships",
+            url: "/Internships",
+            icon: Briefcase,
         }
     ],
 }
