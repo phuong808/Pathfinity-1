@@ -619,28 +619,28 @@ export default function RoadmapPage() {
               {/* View Mode Toggle */}
               <div className="flex gap-1 bg-white rounded-lg p-1 border-2 border-gray-300">
                 <Button
-                  variant={viewMode === 'courses' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => handleViewModeChange('courses')}
-                  className={cn(
-                    "flex items-center gap-2",
-                    viewMode === 'courses' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-gray-100'
-                  )}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Courses
-                </Button>
-                <Button
                   variant={viewMode === 'majors' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => handleViewModeChange('majors')}
                   className={cn(
                     "flex items-center gap-2",
-                    viewMode === 'majors' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-gray-100'
+                    viewMode === 'majors' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-700 hover:bg-gray-100'
                   )}
                 >
                   <GraduationCap className="h-4 w-4" />
                   Majors
+                </Button>
+                <Button
+                  variant={viewMode === 'courses' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleViewModeChange('courses')}
+                  className={cn(
+                    "flex items-center gap-2",
+                    viewMode === 'courses' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                  )}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Courses
                 </Button>
               </div>
             </div>
