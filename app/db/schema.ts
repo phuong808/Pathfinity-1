@@ -117,11 +117,8 @@ export const campus = pgTable("campuses", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   instIpeds: text("inst_ipeds"),
-  description: text("description"),
   aliases: jsonb("aliases"),
   type: text("type"),
-  website: text("website"),
-  metadata: jsonb("metadata"),
 });
 
 // Courses offered by campuses

@@ -71,6 +71,13 @@
       "when": 1762759517471,
       "tag": "0009_gigantic_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1762829487094,
+      "tag": "0010_heavy_sir_ram",
+      "breakpoints": true
     }
   ]
 }
