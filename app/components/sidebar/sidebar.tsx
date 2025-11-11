@@ -54,7 +54,7 @@ const data = {
 export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { data: session } = useSession()
     const router = useRouter()
-    const { state, isMobile } = useSidebar()
+    const { state } = useSidebar()
 
     const user = session?.user
         ? {
@@ -65,14 +65,14 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
         : null
 
     return (
-        <>
-          <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader className="position-absolute top-0 left-2">
-              <SidebarMenu>
-                <SidebarMenuItem>
+        <Sidebar collapsible="icon" {...props}>
+          <SidebarHeader className="relative">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <div className="flex items-center justify-between w-full group/logo">
                   <SidebarMenuButton
                     asChild
-                    className="data-[slot=sidebar-menu-button]:!p-1.5"
+                    className="data-[slot=sidebar-menu-button]:!p-1.5 flex-1"
                   >
                     <button
                       type="button"
@@ -83,26 +83,28 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
                       <span className="text-base font-semibold">Pathfinity</span>
                     </button>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarHeader>
+                  
+                  {/* Toggle button - visible when expanded, or on hover when collapsed */}
+                  <SidebarTrigger
+                    className={`${
+                      state === "collapsed" 
+                        ? "opacity-0 group-hover/logo:opacity-100 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2" 
+                        : "opacity-100 relative"
+                    } transition-opacity duration-200`}
+                  />
+                </div>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
 
-            <SidebarContent>
-              <NavMain items={data.navMain} />
-              <ChatHistory userId={session?.user?.id} />
-            </SidebarContent>
+          <SidebarContent>
+            <NavMain items={data.navMain} />
+            <ChatHistory userId={session?.user?.id} />
+          </SidebarContent>
 
-            <SidebarFooter>
-              <NavUser user={user} />
-            </SidebarFooter>
-          </Sidebar>
-
-          <SidebarTrigger
-            className={`fixed top-0 z-10 transition-[left] duration-200 ease-in-out ${
-              isMobile ? "top-4 left-4" : state === "collapsed" ? "left-[3rem]" : "left-[var(--sidebar-width)]"
-            }`}
-          />
-        </>
-
+          <SidebarFooter>
+            <NavUser user={user} />
+          </SidebarFooter>
+        </Sidebar>
     )
 }
