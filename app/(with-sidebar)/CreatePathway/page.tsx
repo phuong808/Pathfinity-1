@@ -1,0 +1,223 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import StepIndicator from "../../components/pathway/step-indicator"
+import Career from "@/app/components/pathway/career"
+import College from "@/app/components/pathway/college"
+import Interests from "@/app/components/pathway/interests"
+import Skills from "@/app/components/pathway/skills"
+import ProfilePreview from "@/app/components/profiles/profile-preview"
+import { Button } from "@/app/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/app/components/ui/alert"
+import { Check } from "lucide-react"
+
+type FormData = {
+  career: string
+  college: string
+  major: string
+  degree: string
+  interests: string[]
+  tasks: string
+  skills: string[]
+  careerValidated?: boolean
+}
+
+export default function CreatePathwayPage() {
+  const router = useRouter()
+  const [step, setStep] = useState(1)
+  const [generatedInterests, setGeneratedInterests] = useState<string[]>([])
+  const [generatedSkills, setGeneratedSkills] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false)
+  const [form, setForm] = useState<FormData>({
+    career: "",
+    college: "",
+    major: "",
+    degree: "",
+    interests: [],
+    tasks: "",
+    skills: [],
+    careerValidated: false,
+  })
+
+  function next() {
+    setStep((s) => Math.min(6, s + 1))
+  }
+
+  function back() {
+    setStep((s) => Math.max(1, s - 1))
+  }
+
+  async function handleConfirm() {
+    try {
+      setIsLoading(true)
+      
+      const response = await fetch("/api/profiles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          career: form.career,
+          college: form.college,
+          major: form.major,
+          degree: form.degree,
+          interests: form.interests,
+          skills: form.skills,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to save profile")
+      }
+
+      const data = await response.json()
+      console.log("Profile saved:", data)
+
+      // Show success alert
+      setShowSuccessAlert(true)
+
+      // Redirect to roadmap page after a short delay
+      setTimeout(() => {
+        router.push("/Roadmap")
+      }, 2000)
+    } catch (error) {
+      console.error("Error saving profile:", error)
+      alert("Failed to save profile. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const nextEnabled =
+    step === 1
+      ? !!form.careerValidated
+      : step === 2
+      ? form.college !== "" && form.major !== "" && form.degree !== ""
+      : step === 3
+      ? form.interests.length > 0
+      : step === 4
+      ? form.skills.length > 0
+      : true
+
+  return (
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Success Alert */}
+        {showSuccessAlert && (
+          <div className="absolute top-6 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2 px-4">
+            <Alert className="bg-green-50 border-green-800">
+              <Check className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800">Profile Created Successfully!</AlertTitle>
+              <AlertDescription className="text-green-700">
+                Your pathway profile has been saved. Redirecting to roadmap...
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        <div className="min-h-[90vh] flex items-center">
+          <div className="w-full">
+            <div className="flex flex-col md:flex-row gap-12 md:items-stretch">
+              {/* Left: form column */}
+              <div className="flex-1 h-full overflow-hidden">
+                <div className="h-full">
+                  {step === 1 && <Career form={form} setForm={setForm} />}
+                  {step === 2 && <College form={form} setForm={setForm} />}
+                  {step === 3 && (
+                    <Interests
+                      form={form}
+                      setForm={setForm}
+                      interests={generatedInterests}
+                      onInterestsChange={setGeneratedInterests}
+                    />
+                  )}
+                  {step === 4 && (
+                    <Skills
+                      form={form}
+                      setForm={setForm}
+                      skills={generatedSkills}
+                      onSkillsChange={setGeneratedSkills}
+                    />
+                  )}
+                  {step === 5 && (
+                    <div className="flex items-center justify-center">
+                      <div className="w-full max-w-2xl">
+                        <ProfilePreview
+                          career={form.career}
+                          college={form.college}
+                          major={form.major}
+                          degree={form.degree}
+                          interests={form.interests}
+                          skills={form.skills}
+                          onEdit={(targetStep) => setStep(targetStep)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TODO: Step 6 will be roadmap generation */}
+                  {step === 6 && (
+                    <div className="mt-6 p-6 bg-white rounded shadow">
+                      <h2 className="text-2xl font-semibold mb-3">Success!</h2>
+                      <p className="text-gray-700">Your profile has been created.</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Next: Generate roadmap and navigate to dashboard
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: step indicator */}
+              <div className="hidden md:flex w-48 h-full">
+                <StepIndicator step={step} />
+              </div>
+            </div>
+
+            {/* Back and Next buttons */}
+            <div className="mt-4 flex gap-5 pr-30">
+              <Button
+                variant="outline"
+                className="mr-2"
+                onClick={back}
+                disabled={step === 1}
+              >
+                Back
+              </Button>
+
+              <div className="flex gap-2">
+                {step < 4 ? (
+                  <Button
+                    onClick={next}
+                    className="!bg-green-600 !text-white !border-green-600 hover:!bg-green-700 active:!bg-green-800 focus-visible:!ring-2 focus-visible:!ring-green-300"
+                    disabled={!nextEnabled}
+                  >
+                    Next
+                  </Button>
+                ) : step === 4 ? (
+                  <Button
+                    className="!bg-green-600 !text-white !border-green-600 hover:!bg-green-700 active:!bg-green-800 focus-visible:!ring-2 focus-visible:!ring-green-300"
+                    onClick={() => setStep(5)}
+                    disabled={!nextEnabled}
+                  >
+                    Review
+                  </Button>
+                ) : step === 5 ? (
+                  <Button
+                    className="!bg-green-600 !text-white !border-green-600 hover:!bg-green-700 active:!bg-green-800 focus-visible:!ring-2 focus-visible:!ring-green-300"
+                    onClick={handleConfirm}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Saving..." : "Confirm & Save"}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
