@@ -37,19 +37,14 @@ const data = {
             icon: Map,
         },
         {
-            title: "Majors",
-            url: "/Majors",
-            icon: GraduationCap,
-        },
-        {
-            title: "Careers",
-            url: "/Careers",
-            icon: Briefcase,
-        },
-        {
-            title: "People",
-            url: "/People",
+            title: "Mentors",
+            url: "/Mentors",
             icon: User,
+        },
+        {
+            title: "Internships",
+            url: "/Internships",
+            icon: Briefcase,
         }
     ],
 }
@@ -71,23 +66,36 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
 
     return (
         <>
-          <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader className="position-absolute top-0 left-2">
+          <Sidebar collapsible="icon" className="group/sidebar-hover" {...props}>
+            <SidebarHeader className="relative">
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="data-[slot=sidebar-menu-button]:!p-1.5"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => router.push('/')}
-                      className="flex items-center gap-2"
+                  <div className="flex items-center justify-between w-full">
+                    <SidebarMenuButton
+                      asChild
+                      className="data-[slot=sidebar-menu-button]:!p-1.5 flex-1"
                     >
-                      <Infinity className="h-5 w-5" />
-                      <span className="text-base font-semibold">Pathfinity</span>
-                    </button>
-                  </SidebarMenuButton>
+                      <button
+                        type="button"
+                        onClick={() => router.push('/')}
+                        className="flex items-center gap-2"
+                      >
+                        <Infinity className="h-5 w-5" />
+                        <span className="text-base font-semibold">Pathfinity</span>
+                      </button>
+                    </SidebarMenuButton>
+                    
+                    {/* Toggle button - visible when expanded or on hover over sidebar when collapsed on desktop */}
+                    {!isMobile && (
+                      <SidebarTrigger
+                        className={`${
+                          state === "collapsed" 
+                            ? "opacity-0 group-hover/sidebar-hover:opacity-100 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-sidebar hover:bg-sidebar-accent rounded-md" 
+                            : "opacity-100 relative"
+                        } transition-opacity duration-200`}
+                      />
+                    )}
+                  </div>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
@@ -102,12 +110,10 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
             </SidebarFooter>
           </Sidebar>
 
-          <SidebarTrigger
-            className={`fixed top-0 z-10 transition-[left] duration-200 ease-in-out ${
-              isMobile ? "top-4 left-4" : state === "collapsed" ? "left-[3rem]" : "left-[var(--sidebar-width)]"
-            }`}
-          />
+          {/* Mobile trigger - always visible, positioned fixed */}
+          {isMobile && (
+            <SidebarTrigger className="fixed top-4 left-4 z-50 bg-sidebar" />
+          )}
         </>
-
     )
 }

@@ -14,7 +14,7 @@ export default async function WithSidebarLayout({
   if (!session) redirect("/");
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider>
       <ChatSidebar />
       <main className="flex-1 overflow-hidden">
         {children}
