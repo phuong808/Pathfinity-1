@@ -5,9 +5,9 @@ import { degree as d } from '@/app/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const getDegrees = tool({
-    description: "List all degree types (B.S., M.A., Ph.D., etc.). Use when asked about degree TYPES, not specific majors.",
+    description: "List all degree and certificate types available in the UH system (B.S., B.A., M.A., Ph.D., Associate, Certificate, etc.). Use when asked about degree types or credential levels.",
     inputSchema: z.object({
-        level: z.string().optional().describe("Filter: 'baccalaureate', 'associate', 'graduate', 'doctorate', 'certificate'"),
+        level: z.string().optional().describe("Filter by level: 'baccalaureate', 'associate', 'graduate', 'doctorate', 'certificate'"),
     }),
     execute: async ({ level }) => {
         try {
@@ -22,7 +22,13 @@ export const getDegrees = tool({
             }
 
             const degrees = await query;
-            if (!degrees?.length) return level ? `No ${level} degrees found.` : 'No degrees found.';
+            
+            if (!degrees?.length) {
+                return {
+                    found: false,
+                    message: level ? `No ${level} degrees found in the system.` : 'No degree types found in the system.',
+                };
+            }
 
             const byLevel = degrees.reduce((acc, deg) => {
                 const lvl = deg.level || 'Other';
@@ -38,10 +44,19 @@ export const getDegrees = tool({
                 lines.push('');
             });
 
-            return lines.join('\n');
+            return {
+                found: true,
+                count: degrees.length,
+                degrees: degrees,
+                formatted: lines.join('\n'),
+            };
         } catch (error) {
             console.error('getDegrees error:', error);
-            return 'Having trouble loading degrees. Try again?';
+            return {
+                found: false,
+                error: true,
+                message: 'I\'m having trouble loading degree types right now. Please try again in a moment.',
+            };
         }
     }
 });
