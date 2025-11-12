@@ -68,7 +68,7 @@ export function MajorsView({
                   <div className="flex items-start gap-3">
                     <div className="text-3xl">🎓</div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">
+                      <h3 className="font-semibold text-sm text-gray-900 mb-2 leading-tight">
                         {major.majorName}
                       </h3>
                       <div className="flex flex-wrap gap-1">

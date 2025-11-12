@@ -10,7 +10,7 @@ import pcattCoursesData from '@/app/db/data/pcatt_courses.json';
 import westoahuCoursesData from '@/app/db/data/west_oahu_courses.json';
 import windwardCoursesData from '@/app/db/data/windward_courses.json';
 import manoaDegreePathways from '@/app/db/data/manoa_degree_pathways.json';
-import kapiolaniDegreePathways from '@/app/db/data/kcc_degree_pathways.json';
+import kapiolaniDegreePathways from '@/app/db/data/kapiolani_degree_pathways.json';
 
 export interface CourseDetails {
   course_prefix: string;
