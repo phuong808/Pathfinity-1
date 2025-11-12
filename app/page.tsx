@@ -230,7 +230,7 @@ export default async function Home() {
             alt="AI animation"
             width={1200}
             height={800}
-            className="w-full h-[480px] object-cover rounded-xl shadow-2xl mb-12"
+            className="w-full h-[640px] object-cover rounded-xl shadow-2xl mb-12"
             priority
           />
           <p className="mt-6 mx-auto max-w-[600px] text-center text-black-600 text-lg">
