@@ -7,6 +7,7 @@ import { pathwayToTimeline } from "../Roadmap/utils";
 import { TimelineItem, PathwayData } from "../Roadmap/types";
 import { TimelineView } from "../Roadmap/components/TimelineView";
 import { DetailsPanel } from "../Roadmap/components/DetailsPanel";
+import { normalizePathwayData } from "@/lib/pathway-json";
 
 export default function SavedRoadmapsPage() {
   const [selectedCampus, setSelectedCampus] = useState<string>("manoa");
@@ -24,28 +25,29 @@ export default function SavedRoadmapsPage() {
   useEffect(() => {
     let pd: PathwayData | null = null;
 
-    try {
-      // Prefer sessionStorage for immediate handoff reliability
-      const sessionDraft = sessionStorage.getItem("pathfinity.roadmapDraft");
-      if (sessionDraft && sessionDraft.trim()) {
-        const parsed = JSON.parse(sessionDraft);
-        if (parsed?.pathwayData?.years) pd = parsed.pathwayData as PathwayData;
-        else if (Array.isArray(parsed?.years)) pd = parsed as PathwayData;
-        sessionStorage.removeItem("pathfinity.roadmapDraft");
-      }
-    } catch {}
-
-    try {
-      if (!pd) {
-        const localDraft = localStorage.getItem("pathfinity.roadmapDraft");
-        if (localDraft && localDraft.trim()) {
-          const parsed = JSON.parse(localDraft);
-          if (parsed?.pathwayData?.years) pd = parsed.pathwayData as PathwayData;
-          else if (Array.isArray(parsed?.years)) pd = parsed as PathwayData;
-          localStorage.removeItem("pathfinity.roadmapDraft");
+    const loadDraft = (get: (k: string) => string | null, remove: (k: string) => void) => {
+      try {
+        const raw = get("pathfinity.roadmapDraft");
+        if (!raw || !raw.trim()) return;
+        const parsed = JSON.parse(raw);
+        const normalized = normalizePathwayData(parsed);
+        if (normalized) {
+          pd = normalized;
         }
+        remove("pathfinity.roadmapDraft");
+      } catch {
+        // ignore storage parsing errors
       }
-    } catch {}
+    };
+
+    // Prefer sessionStorage first for immediate handoff reliability
+    if (typeof sessionStorage !== 'undefined') {
+      loadDraft(sessionStorage.getItem.bind(sessionStorage), sessionStorage.removeItem.bind(sessionStorage));
+    }
+    // Fallback to localStorage if not found
+    if (!pd && typeof localStorage !== 'undefined') {
+      loadDraft(localStorage.getItem.bind(localStorage), localStorage.removeItem.bind(localStorage));
+    }
 
     if (pd) {
       setPathwayData(pd);
@@ -147,14 +149,9 @@ export default function SavedRoadmapsPage() {
                   try {
                     if (!importText.trim()) throw new Error('No input provided');
                     const parsed = JSON.parse(importText);
-                    let pd: PathwayData | null = null;
-                    if (parsed?.pathwayData?.years) pd = parsed.pathwayData as PathwayData;
-                    else if (Array.isArray(parsed?.years)) pd = parsed as PathwayData;
-                    else if (Array.isArray(parsed) && parsed.length > 0 && Array.isArray(parsed[0]?.years)) pd = parsed[0] as PathwayData;
-                    if (!pd) throw new Error('JSON does not look like a PathwayData object.');
-
-                    // Persist in state so campus changes recompute correctly
-                    setPathwayData(pd);
+                    const normalized = normalizePathwayData(parsed);
+                    if (!normalized) throw new Error('JSON does not look like a PathwayData object.');
+                    setPathwayData(normalized);
                     setError(null);
                   } catch (err: any) {
                     console.error('Paste import error:', err);
