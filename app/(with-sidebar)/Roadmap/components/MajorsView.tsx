@@ -11,6 +11,26 @@ interface MajorsViewProps {
   onMajorSelect: (major: MajorData) => void;
 }
 
+// Helper function to clean up major names by removing full degree titles and abbreviations
+function cleanMajorName(majorName: string): string {
+  // Remove patterns like "Bachelor of Science", "Bachelor of Arts", etc.
+  // Also remove abbreviations in parentheses like (BS), (BA), (BBA), etc.
+  return majorName
+    .replace(/Bachelor of Science\s*/gi, '')
+    .replace(/Bachelor of Arts\s*/gi, '')
+    .replace(/Bachelor of Business Administration\s*/gi, '')
+    .replace(/Bachelor of Education\s*/gi, '')
+    .replace(/Bachelor of Fine Arts\s*/gi, '')
+    .replace(/Master of Science\s*/gi, '')
+    .replace(/Master of Arts\s*/gi, '')
+    .replace(/Associate in Science\s*/gi, '')
+    .replace(/Associate in Arts\s*/gi, '')
+    .replace(/\([A-Z]{2,}\)/g, '') // Remove abbreviations in parentheses like (BS), (BA), (BBA)
+    .replace(/^in\s+/i, '') // Remove "in " at the beginning
+    .replace(/\s+in\s+/gi, ' ') // Remove " in " in the middle (optional, keeps it cleaner)
+    .trim();
+}
+
 export function MajorsView({
   filteredMajors,
   selectedCampus,
@@ -69,7 +89,7 @@ export function MajorsView({
                     <div className="text-3xl">🎓</div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm text-gray-900 mb-2 leading-tight">
-                        {major.majorName}
+                        {cleanMajorName(major.majorName)}
                       </h3>
                       <div className="flex flex-wrap gap-1">
                         {major.degrees.map((degree, i) => (
