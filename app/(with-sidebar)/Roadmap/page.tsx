@@ -155,7 +155,7 @@ export default function RoadmapPage() {
   // Handle major selection and load its pathway
   const handleMajorSelect = (major: MajorData) => {
     // If the major has pathway data, load it into the timeline
-    if (major.pathwayData) {
+    if (major.pathwayData && major.pathwayData.years && major.pathwayData.years.length > 0) {
       const { items, categories: pathwayCategories, periods: pathwayPeriods } = pathwayToTimeline(major.pathwayData, selectedCampus);
       setTimelineData(items);
       setCategories(pathwayCategories);
@@ -165,6 +165,9 @@ export default function RoadmapPage() {
       
       // Switch to courses view to display the timeline
       setViewMode('courses');
+    } else {
+      // If no pathway data available, show an alert or message
+      alert('This program does not have detailed pathway information available yet.');
     }
   };
 

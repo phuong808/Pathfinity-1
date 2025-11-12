@@ -40,11 +40,6 @@ const data = {
             title: "Mentors",
             url: "/Mentors",
             icon: User,
-        },
-        {
-            title: "Internships",
-            url: "/Internships",
-            icon: Briefcase,
         }
     ],
 }

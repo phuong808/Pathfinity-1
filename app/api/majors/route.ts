@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/app/db/index'
 import { campus, major } from '@/app/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
+import { normalizeHawaiian } from '@/lib/normalize-hawaiian'
 
 // In-memory cache
 const cache = new Map<string, { data: any[], timestamp: number }>()
@@ -31,7 +32,15 @@ export async function GET(req: Request) {
     }
 
     if (!targetCampusId && campusName) {
-      const found = await db.select().from(campus).where(eq(campus.name, campusName)).limit(1)
+      // Use centralized normalization + alias matching for campus lookup
+      const found = await db
+        .select()
+        .from(campus)
+        .where(sql`(
+          translate(LOWER(${campus.name}), 'āēīōūʻ''''', 'aeiou') LIKE ${`%${normalizeHawaiian(campusName)}%`} OR
+          ${campus.aliases}::text ILIKE ${`%${campusName}%`}
+        )`)
+        .limit(1)
       if (found.length === 0) {
         return NextResponse.json([], { status: 200 })
       }

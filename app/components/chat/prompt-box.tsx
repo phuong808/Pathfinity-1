@@ -1,8 +1,6 @@
 "use client"
 
-import { useState } from "react"
 import TextBox from './text-box'
-import VoiceBox from './voice-box'
 import type { PromptInputMessage } from "@/app/components/ai-elements/prompt-input"
 
 type ModelOption = { id: string; name: string }
@@ -28,20 +26,6 @@ export function PromptBox({
   status,
   className,
 }: Props) {
-  const [voiceMode, setVoiceMode] = useState(false)
-
-  if (voiceMode) {
-    return (
-      <VoiceBox
-        className={className}
-        onClose={() => setVoiceMode(false)}
-        onStartRecording={() => {
-          // TODO: future speech recognition start/stop
-        }}
-      />
-    )
-  }
-
   return (
     <TextBox
       input={input}
@@ -52,7 +36,7 @@ export function PromptBox({
       setModel={setModel}
       status={status}
       className={className}
-      onStartVoice={() => setVoiceMode(true)}
+      // speech handled inline by the mic button; no extra modal
     />
   )
 }

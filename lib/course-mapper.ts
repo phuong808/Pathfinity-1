@@ -10,6 +10,7 @@ import pcattCoursesData from '@/app/db/data/pcatt_courses.json';
 import westoahuCoursesData from '@/app/db/data/west_oahu_courses.json';
 import windwardCoursesData from '@/app/db/data/windward_courses.json';
 import manoaDegreePathways from '@/app/db/data/manoa_degree_pathways.json';
+import kapiolaniDegreePathways from '@/app/db/data/kapiolani_degree_pathways.json';
 
 export interface CourseDetails {
   course_prefix: string;
@@ -184,6 +185,26 @@ export function getMajorsByCampus(campusId: string): MajorData[] {
     }));
   }
   
+  // Special handling for Kapiʻolani CC - use degree pathways data
+  if (campusId === 'kapiolani') {
+    const pathways = kapiolaniDegreePathways as PathwayData[];
+    const mappedPathways = pathways.map(pathway => ({
+      majorName: pathway.program_name,
+      degrees: [extractDegreeType(pathway.program_name)],
+      institution: campus?.displayName || 'Kapiʻolani CC (KCC)',
+      pathwayData: pathway,
+    }));
+    
+    // Sort: pathways with year data first
+    return mappedPathways.sort((a, b) => {
+      const aHasYears = a.pathwayData?.years && a.pathwayData.years.length > 0;
+      const bHasYears = b.pathwayData?.years && b.pathwayData.years.length > 0;
+      if (aHasYears && !bHasYears) return -1;
+      if (!aHasYears && bHasYears) return 1;
+      return 0;
+    });
+  }
+  
   // For other campuses, return empty array for now
   // (will be populated when data is scraped)
   return [];
@@ -201,8 +222,8 @@ function extractDegreeType(programName: string): string {
  * Get all campuses that have majors data
  */
 export function getCampusesWithMajors(): Campus[] {
-  // For now, only Mānoa has pathway data
-  return CAMPUSES.filter(campus => campus.id === 'manoa');
+  // Mānoa and Kapiʻolani have pathway data
+  return CAMPUSES.filter(campus => campus.id === 'manoa' || campus.id === 'kapiolani');
 }
 
 /**

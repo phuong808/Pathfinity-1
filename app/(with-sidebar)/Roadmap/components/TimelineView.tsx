@@ -55,8 +55,10 @@ export function TimelineView({
           
           // Calculate total credits for this semester
           const totalCredits = itemsForPeriod.reduce((sum, item) => {
-            if (item.category === 'Courses' && item.courseDetails) {
-              return sum + (parseInt(item.courseDetails.num_units) || 0);
+            if (item.category === 'Courses') {
+              // Use credits from pathway data first, fallback to courseDetails
+              const credits = item.credits || (item.courseDetails ? parseInt(item.courseDetails.num_units) : 0);
+              return sum + credits;
             }
             return sum;
           }, 0);
@@ -100,9 +102,10 @@ export function TimelineView({
                       {/* Course Header with Code and Credits */}
                       <div className={styles.courseHeader}>
                         <div className={styles.itemCardLabel}>{item.name}</div>
-                        {courseDetails && (
+                        {/* Show credits badge - use pathway credits first, fallback to courseDetails */}
+                        {(item.credits || (courseDetails?.num_units)) && (
                           <div className={styles.courseCredits}>
-                            {courseDetails.num_units} CR
+                            {item.credits || (courseDetails?.num_units)} CR
                           </div>
                         )}
                       </div>

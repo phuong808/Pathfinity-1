@@ -11,6 +11,26 @@ interface MajorsViewProps {
   onMajorSelect: (major: MajorData) => void;
 }
 
+// Helper function to clean up major names by removing full degree titles and abbreviations
+function cleanMajorName(majorName: string): string {
+  // Remove patterns like "Bachelor of Science", "Bachelor of Arts", etc.
+  // Also remove abbreviations in parentheses like (BS), (BA), (BBA), etc.
+  return majorName
+    .replace(/Bachelor of Science\s*/gi, '')
+    .replace(/Bachelor of Arts\s*/gi, '')
+    .replace(/Bachelor of Business Administration\s*/gi, '')
+    .replace(/Bachelor of Education\s*/gi, '')
+    .replace(/Bachelor of Fine Arts\s*/gi, '')
+    .replace(/Master of Science\s*/gi, '')
+    .replace(/Master of Arts\s*/gi, '')
+    .replace(/Associate in Science\s*/gi, '')
+    .replace(/Associate in Arts\s*/gi, '')
+    .replace(/\([A-Z]{2,}\)/g, '') // Remove abbreviations in parentheses like (BS), (BA), (BBA)
+    .replace(/^in\s+/i, '') // Remove "in " at the beginning
+    .replace(/\s+in\s+/gi, ' ') // Remove " in " in the middle (optional, keeps it cleaner)
+    .trim();
+}
+
 export function MajorsView({
   filteredMajors,
   selectedCampus,
@@ -38,14 +58,14 @@ export function MajorsView({
           <div className="text-center p-12 bg-white rounded-2xl shadow-lg">
             <div className="text-6xl mb-4">🔍</div>
             <p className="text-gray-700 text-xl font-semibold mb-2">
-              {selectedCampus === 'manoa' 
+              {selectedCampus === 'manoa' || selectedCampus === 'kapiolani'
                 ? "No majors found"
                 : "No pathway data available for this campus"}
             </p>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
-              {selectedCampus === 'manoa'
+              {selectedCampus === 'manoa' || selectedCampus === 'kapiolani'
                 ? "Try a different search term"
-                : "Currently, only UH Mānoa has complete degree pathway data. Select UH Mānoa from the campus dropdown to explore available majors."}
+                : "Currently, only UH Mānoa and Kapiʻolani CC have complete degree pathway data. Select one of these campuses from the dropdown to explore available programs."}
             </p>
           </div>
         ) : (
@@ -68,8 +88,8 @@ export function MajorsView({
                   <div className="flex items-start gap-3">
                     <div className="text-3xl">🎓</div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">
-                        {major.majorName}
+                      <h3 className="font-semibold text-sm text-gray-900 mb-2 leading-tight">
+                        {cleanMajorName(major.majorName)}
                       </h3>
                       <div className="flex flex-wrap gap-1">
                         {major.degrees.map((degree, i) => (
@@ -81,10 +101,19 @@ export function MajorsView({
                           </span>
                         ))}
                       </div>
-                      {major.pathwayData && (
+                      {major.pathwayData && major.pathwayData.years && major.pathwayData.years.length > 0 ? (
                         <div className="mt-2 text-xs text-green-600 font-medium flex items-center gap-1">
                           <span>✓</span>
-                          <span>4-year pathway available</span>
+                          <span>
+                            {major.pathwayData.years.length > 0 
+                              ? `${major.pathwayData.years.length}-year pathway available`
+                              : 'Pathway available'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-xs text-gray-400 font-medium flex items-center gap-1">
+                          <span>ℹ️</span>
+                          <span>Detailed pathway not available</span>
                         </div>
                       )}
                     </div>
