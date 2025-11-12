@@ -12,7 +12,7 @@ async function ensureMajorsTable(): Promise<boolean> {
         const rows = await db.execute(sql`SELECT to_regclass('public.majors') AS reg`);
         const first: any = Array.isArray(rows) ? rows[0] : (rows as any).rows?.[0];
         if (!first) return false;
-        const value = first.reg ?? first.to_regclass ?? first.to_regclass; // fallback variations
+        const value = first.reg ?? first.to_regclass; // fallback variations
         return value !== null;
     } catch {
         return false;
