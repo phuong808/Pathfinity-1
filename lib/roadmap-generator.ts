@@ -20,6 +20,7 @@ import {
 } from "@/app/db/schema";
 import { eq, and } from "drizzle-orm";
 import OpenAI from "openai";
+import { getCampusDisciplineMapping } from "./campus-prefixes";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -91,7 +92,7 @@ export async function generateRoadmapFromProfile(profileId: number): Promise<Roa
   }
 
   const profile = profiles[0];
-  const { college, major, degree } = profile;
+  const { college, major, degree, skills } = profile;
 
   if (!college || !major || !degree) {
     throw new Error(`Profile ${profileId} is missing required fields: college, major, or degree`);
@@ -103,7 +104,10 @@ export async function generateRoadmapFromProfile(profileId: number): Promise<Roa
     throw new Error(`Unknown college: ${college}`);
   }
 
-  return generateRoadmap(campusId, major, degree);
+  // Extract skills array from jsonb field
+  const userSkills = skills ? (Array.isArray(skills) ? skills : []) : [];
+
+  return generateRoadmap(campusId, major, degree, userSkills);
 }
 
 /**
@@ -112,9 +116,13 @@ export async function generateRoadmapFromProfile(profileId: number): Promise<Roa
 export async function generateRoadmap(
   campusId: string,
   majorTitle: string,
-  degreeCodeOrName: string
+  degreeCodeOrName: string,
+  userSkills: string[] = []
 ): Promise<Roadmap> {
   console.log(`Generating AI roadmap for: ${majorTitle} (${degreeCodeOrName}) at ${campusId}`);
+  if (userSkills.length > 0) {
+    console.log(`User skills: ${userSkills.join(', ')}`);
+  }
 
   // 1. Fetch campus info
   const campuses = await db
@@ -175,7 +183,7 @@ export async function generateRoadmap(
   let majorDegree;
   if (majorDegrees.length === 0) {
     console.warn(
-      `⚠️  No relationship found between major "${majorTitle}" and degree "${degreeCodeOrName}". Trying fallback...`
+      `[WARN]  No relationship found between major "${majorTitle}" and degree "${degreeCodeOrName}". Trying fallback...`
     );
     
     // Get all degrees for this major
@@ -204,7 +212,7 @@ export async function generateRoadmap(
     if (fallbackDegrees.length > 0) {
       const fallbackDegree = fallbackDegrees[0];
       console.log(
-        `✅ Using fallback degree: ${fallbackDegree.name || fallbackDegree.code} instead of ${degreeCodeOrName}`
+        `[OK] Using fallback degree: ${fallbackDegree.name || fallbackDegree.code} instead of ${degreeCodeOrName}`
       );
     }
   } else {
@@ -214,7 +222,16 @@ export async function generateRoadmap(
   const durationMonths = majorDegree.typicalDuration || 24; // default to 24 months if null
   const durationYears = Math.ceil(durationMonths / 12);
 
+  // Determine if this is an undergraduate program (needs Gen Ed) or graduate/certificate (doesn't)
+  const degreeLevel = degree.level?.toLowerCase() || '';
+  const isUndergraduate = degreeLevel === 'undergraduate' || 
+                          degreeLevel === 'bachelor' || 
+                          degreeLevel === "bachelor's" ||
+                          degree.code?.toUpperCase().startsWith('B') || // BA, BS, BBA, etc.
+                          degree.name?.toLowerCase().includes('bachelor');
+  
   console.log(`Requirements: ${requiredCredits} credits over ${durationYears} years`);
+  console.log(`Degree level: ${degreeLevel || 'unknown'} (${isUndergraduate ? 'Undergraduate - includes Gen Ed' : 'Graduate/Certificate - major courses only'})`);
 
   // 5. Build prefix mapping from ACTUAL database content for this major
   const relevantPrefixes = await getRelevantPrefixesFromDatabase(campusId, majorTitle);
@@ -281,7 +298,7 @@ export async function generateRoadmap(
   console.log(`Filtered from ${courses.length} total → ${allCourseData.length} relevant courses`);
 
   // 9. Further refine by course level if still too many
-  const relevantCourses = refineCourseSelection(allCourseData, requiredCredits);
+  const relevantCourses = refineCourseSelection(allCourseData, requiredCredits, durationYears);
   console.log(`Final selection: ${relevantCourses.length} courses for AI`);
 
   // 9. Use AI to generate roadmap with filtered courses
@@ -291,7 +308,9 @@ export async function generateRoadmap(
     degree.name || degree.code, // Use code as fallback if name is null
     campus.name,
     requiredCredits,
-    durationYears
+    durationYears,
+    userSkills,
+    isUndergraduate // Pass whether Gen Ed is required
   );
 
   return roadmap;
@@ -299,7 +318,7 @@ export async function generateRoadmap(
 
 /**
  * Get relevant course prefixes from the database based on major title
- * AGGRESSIVE FILTERING: Returns only core major prefixes + essential gen-ed (5-8 prefixes max)
+ * Uses campus-specific prefix mappings to handle variations across UH System
  */
 async function getRelevantPrefixesFromDatabase(
   campusId: string,
@@ -326,7 +345,7 @@ async function getRelevantPrefixesFromDatabase(
     }
   }
 
-  // Extract keywords from major title
+  // Extract keywords from major title - be more specific
   const majorKeywords = majorTitle.toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
@@ -334,35 +353,23 @@ async function getRelevantPrefixesFromDatabase(
 
   const relevantPrefixes = new Set<string>();
 
-  // Core abbreviation patterns (ONLY most common)
-  const coreAbbreviations: Record<string, string[]> = {
-    'computer': ['ICS'],
-    'information': ['ICS'],
-    'business': ['BUS'],
-    'account': ['ACC'],
-    'economic': ['ECON'],
-    'engineer': ['ENGR'],
-    'biolog': ['BIOL'],
-    'chemist': ['CHEM'],
-    'physic': ['PHYS'],
-    'mathematic': ['MATH'],
-    'english': ['ENG'],
-    'psycholog': ['PSY'],
-    'nurs': ['NURS'],
-    'hawaiian': ['HWST'],
-    'communicat': ['COM'],
-    'history': ['HIST'],
-    'sociology': ['SOC'],
-    'anthropology': ['ANTH'],
-  };
+  // Get campus-specific prefix mappings (or default)
+  const campusPrefixes = getCampusDisciplineMapping(campusId);
 
-  // Match major keywords to core prefixes ONLY
+  // Match major keywords to campus-specific prefixes
+  // STRICT matching: only match full words at the START of discipline names
   for (const keyword of majorKeywords) {
-    for (const [key, prefixes] of Object.entries(coreAbbreviations)) {
-      if (keyword.startsWith(key)) {
-        prefixes.forEach(p => {
+    for (const [discipline, prefixes] of Object.entries(campusPrefixes)) {
+      // Split discipline by underscore
+      const disciplineParts = discipline.split('_');
+      
+      // Only match if keyword is the FIRST part of the discipline
+      // e.g., "computer" matches "computer_science" but "science" does NOT match "political_science"
+      if (disciplineParts[0] === keyword) {
+        (prefixes as string[]).forEach((p: string) => {
           if (prefixToDepts.has(p)) {
             relevantPrefixes.add(p);
+            console.log(`  Matched "${keyword}" -> ${p} (${discipline})`);
           }
         });
       }
@@ -374,26 +381,15 @@ async function getRelevantPrefixesFromDatabase(
   for (const prefix of prefixToDepts.keys()) {
     if (prefix === firstWord || prefix === firstWord.substring(0, 4)) {
       relevantPrefixes.add(prefix);
+      console.log(`  Direct match: "${firstWord}" -> ${prefix}`);
     }
   }
 
-  // Always include ONLY core general education prefixes (minimal set)
-  const genEdPrefixes = ['ENG', 'ENGL', 'MATH'];
-  genEdPrefixes.forEach(prefix => {
-    if (prefixToDepts.has(prefix)) {
-      relevantPrefixes.add(prefix);
-    }
-  });
-
-  // Add COMM/COM only if campus has it (for general ed communication requirement)
-  if (prefixToDepts.has('COM')) relevantPrefixes.add('COM');
-  else if (prefixToDepts.has('COMM')) relevantPrefixes.add('COMM');
-
-  // Limit to maximum 8 prefixes to keep course count low
-  if (relevantPrefixes.size > 8) {
-    // Prioritize: major-specific prefixes first, then gen-ed
-    const majorSpecific = Array.from(relevantPrefixes).filter(p => !genEdPrefixes.includes(p));
-    const limited = new Set([...majorSpecific.slice(0, 5), ...genEdPrefixes]);
+  // Limit to reasonable number of major-specific prefixes
+  // We ONLY focus on major-related courses we can accurately map
+  if (relevantPrefixes.size > 15) {
+    const limited = new Set(Array.from(relevantPrefixes).slice(0, 15));
+    console.log(`  Limited from ${relevantPrefixes.size} to ${limited.size} prefixes`);
     return limited;
   }
 
@@ -401,58 +397,81 @@ async function getRelevantPrefixesFromDatabase(
 }
 
 /**
- * Refine course selection by prioritizing foundational courses
- * AGGRESSIVE FILTERING: Target 40-60 courses max
+ * Refine course selection with balanced level distribution
+ * Provides progression from introductory to advanced courses
  */
 function refineCourseSelection(
   courses: CourseData[],
-  requiredCredits: number
+  requiredCredits: number,
+  durationYears: number
 ): CourseData[] {
-  // MUCH more aggressive target: 40-60 courses only
+  // Target: Ensure enough courses to meet credit requirements
+  const minCoursesNeeded = Math.ceil(requiredCredits / 3);
+  
+  // Add buffer of 80% more courses to give AI plenty of options
   const targetCount = Math.min(
-    Math.max(Math.ceil((requiredCredits / 3) * 2), 40),
-    60
+    Math.ceil(minCoursesNeeded * 1.8),
+    150 // Cap at 150 courses
   );
+
+  console.log(`  Target course count: ${targetCount} (need ~${minCoursesNeeded} courses for ${requiredCredits} credits)`);
 
   // If already within target, return as is
   if (courses.length <= targetCount) {
     return courses;
   }
 
-  // Categorize by course level
-  const foundational = courses.filter(c => {
+  // Categorize by course level (100s, 200s, 300s, 400s)
+  const level100 = courses.filter(c => {
     const num = parseInt(c.code.match(/(\d+)/)?.[1] || "999", 10);
     return num >= 100 && num < 200;
   });
 
-  const intermediate = courses.filter(c => {
+  const level200 = courses.filter(c => {
     const num = parseInt(c.code.match(/(\d+)/)?.[1] || "999", 10);
     return num >= 200 && num < 300;
   });
 
-  const advanced = courses.filter(c => {
+  const level300 = courses.filter(c => {
     const num = parseInt(c.code.match(/(\d+)/)?.[1] || "999", 10);
-    return num >= 300 && num < 500;
+    return num >= 300 && num < 400;
   });
 
-  // Sort each category by course number (ascending)
-  [foundational, intermediate, advanced].forEach(category => {
+  const level400 = courses.filter(c => {
+    const num = parseInt(c.code.match(/(\d+)/)?.[1] || "999", 10);
+    return num >= 400 && num < 500;
+  });
+
+  // Sort each level by course number (ascending)
+  [level100, level200, level300, level400].forEach(category => {
     category.sort((a, b) => {
       const getNum = (code: string) => parseInt(code.match(/(\d+)/)?.[1] || "999", 10);
       return getNum(a.code) - getNum(b.code);
     });
   });
 
-  // Distribution strategy: Heavy bias toward foundational courses
-  // 60% foundational, 30% intermediate, 10% advanced
-  const foundationalCount = Math.ceil(targetCount * 0.60);
-  const intermediateCount = Math.ceil(targetCount * 0.30);
-  const advancedCount = targetCount - foundationalCount - intermediateCount;
+  // Distribution based on program duration
+  // 2-year: 40% 100s, 60% 200s
+  // 4-year: 25% 100s, 30% 200s, 30% 300s, 15% 400s
+  let count100, count200, count300, count400;
+  
+  if (durationYears <= 2) {
+    count100 = Math.ceil(targetCount * 0.40);
+    count200 = targetCount - count100;
+    count300 = 0;
+    count400 = 0;
+  } else {
+    count100 = Math.ceil(targetCount * 0.25);
+    count200 = Math.ceil(targetCount * 0.30);
+    count300 = Math.ceil(targetCount * 0.30);
+    count400 = targetCount - count100 - count200 - count300;
+  }
 
   return [
-    ...foundational.slice(0, foundationalCount),
-    ...intermediate.slice(0, intermediateCount),
-    ...advanced.slice(0, advancedCount),
+    ...level100.slice(0, count100),
+    ...level200.slice(0, count200),
+    ...level300.slice(0, count300),
+    ...level400.slice(0, count400),
   ];
 }
 
@@ -465,76 +484,167 @@ async function generateRoadmapWithAI(
   degreeName: string,
   campusName: string,
   requiredCredits: number,
-  durationYears: number
+  durationYears: number,
+  userSkills: string[] = [],
+  isUndergraduate: boolean = true
 ): Promise<Roadmap> {
   console.log(`  Sending ${courses.length} carefully curated courses to AI`);
+  if (userSkills.length > 0) {
+    console.log(`  User's desired skills: ${userSkills.join(', ')}`);
+  }
+  console.log(`  Program type: ${isUndergraduate ? 'Undergraduate (includes Gen Ed)' : 'Graduate/Certificate (major only)'}`);
   
-  // Create a structured JSON list of courses (harder to hallucinate)
-  const courseData = courses.map(c => ({
-    code: c.code,
-    credits: c.credits,
-    title: c.title,
-  }));
-  
-  const systemPrompt = `You are an expert academic advisor creating degree roadmaps.
+  const systemPrompt = `You are an expert academic advisor creating CAREER-FOCUSED degree pathways for University of Hawaiʻi System students.
 
-You will receive a curated list of ${courses.length} available courses. These are the ONLY courses you can use.
+MISSION: Build a ${majorTitle} pathway that prioritizes skill development and career readiness.
+
+PROGRAM TYPE: ${isUndergraduate ? 'UNDERGRADUATE (Bachelor\'s Degree)' : 'GRADUATE/CERTIFICATE PROGRAM'}
+
+${userSkills.length > 0 ? `STUDENT'S CAREER GOALS:
+The student wants to develop these specific skills: ${userSkills.join(', ')}
+PRIORITIZE ${majorTitle} courses that build these skills.
+` : ''}
+
+═══════════════════════════════════════════════════════════════════
+SIMPLIFIED APPROACH - MAJOR FIRST, PLACEHOLDERS FOR THE REST
+═══════════════════════════════════════════════════════════════════
+
+YOUR TASK:
+1. Select ${majorTitle} courses from the provided list (use actual course codes)
+2. Use PLACEHOLDERS for everything else (Gen Ed, support courses, electives)
+
+${isUndergraduate ? `TARGET DISTRIBUTION (${requiredCredits} credits):
+- ${majorTitle} major courses: ~${Math.floor(requiredCredits * 0.50)} credits (PRIORITY - use actual courses)
+- General Education: ~${Math.floor(requiredCredits * 0.30)} credits (use "Gen Ed Requirement" placeholder)
+- Support courses (Math/Science): ~${Math.floor(requiredCredits * 0.10)} credits (use "Support Course" placeholder)
+- Electives: ~${Math.floor(requiredCredits * 0.10)} credits (use "Elective" placeholder)
+
+PLACEHOLDERS TO USE:
+- "Gen Ed Requirement" (3 credits) - for any general education need
+- "Support Course" (3-4 credits) - for math, science, or related courses
+- "Elective" (3 credits) - for any elective credit` : `TARGET DISTRIBUTION (${requiredCredits} credits):
+- ${majorTitle} major courses: ~${Math.floor(requiredCredits * 0.85)} credits (PRIORITY - use actual courses)
+- Electives/Support: ~${Math.floor(requiredCredits * 0.15)} credits (use "Elective" placeholder)
+
+PLACEHOLDERS TO USE:
+- "Elective" (3 credits) - for any elective or support course
+- "Thesis/Capstone" (6 credits) - if applicable for graduate programs`}
 
 CRITICAL RULES:
-1. Use ONLY courses from the provided JSON array - NO EXCEPTIONS
-2. DO NOT invent, guess, or modify any course codes
-3. If you need more courses, repeat existing ones or use fewer courses
-4. Copy course codes EXACTLY from the "code" field
-5. Every course MUST exist in the JSON array
+1. ONLY use course codes from the provided ${majorTitle} course list
+2. DO NOT invent course codes (e.g., "MATH 241", "ENG 100") - use placeholders instead
+3. DO NOT try to map specific Gen Ed requirements - just use "Gen Ed Requirement"
+4. Focus on creating a logical progression of ${majorTitle} courses
+${userSkills.length > 0 ? `5. Select courses that build skills: ${userSkills.join(', ')}` : ''}
 
-Requirements:
-- Major: ${majorTitle}  
-- Degree: ${degreeName}
-- Credits: ${requiredCredits} minimum (can go slightly over if needed)
-- Duration: ${durationYears} years (fall/spring only)
-- Load: 12-18 credits per semester
+PROGRESSION:
+${isUndergraduate ? `- Year 1: Intro ${majorTitle} courses (100-200 level) + placeholders for foundation courses
+- Year 2: Core ${majorTitle} courses (200-300 level) + placeholders for breadth
+- Year 3: Advanced ${majorTitle} (300-400 level) + specialized skills
+- Year 4: Capstone ${majorTitle} (400 level) + career preparation` : `- Focus on advanced ${majorTitle} courses (300/400/500/600 level)
+- Progressive specialization and depth in ${majorTitle}
+- Include research or capstone if available`}
 
-The course list is SMALL and CURATED - use these exact courses only.`;
+EXAMPLE CORRECT USAGE:
+{
+  "name": "ICS 111",  // ✓ Actual ${majorTitle} course from list
+  "credits": 4
+}
+{
+  "name": "Gen Ed Requirement",  // ✓ Simple placeholder
+  "credits": 3
+}
+{
+  "name": "Support Course",  // ✓ For math/science we can't map
+  "credits": 3
+}
 
-  const userPrompt = `AVAILABLE COURSES (${courses.length} total - use ONLY these):
-${JSON.stringify(courseData, null, 2)}
+WRONG - DO NOT DO THIS:
+{
+  "name": "MATH 241",  // ✗ Don't invent courses not in list
+  "credits": 4
+}
+{
+  "name": "GEN-ED-FW",  // ✗ Don't use complex Gen Ed codes
+  "credits": 3
+}`;
 
-Create a ${durationYears}-year roadmap using ONLY courses from above.
+  const userPrompt = `Create a ${durationYears}-year roadmap for ${majorTitle} (${degreeName}).
 
-IMPORTANT: The list above contains ALL available courses. Do NOT use any course not in this list.
+AVAILABLE ${majorTitle.toUpperCase()} COURSES:
+${courses.map(c => `${c.code} - ${c.title} (${c.credits}cr)${c.prerequisites ? ` [Prereq: ${c.prerequisites}]` : ''}`).join('\n')}
 
-Return valid JSON:
+${userSkills.length > 0 ? `STUDENT'S CAREER GOALS: ${userSkills.join(', ')}
+→ Prioritize courses that build these skills!
+` : ''}
+
+${isUndergraduate ? `STRUCTURE YOUR ROADMAP:
+
+Year 1 (Foundation):
+- 3-4 intro ${majorTitle} courses (100-200 level)
+- Fill remaining credits with "Gen Ed Requirement" or "Support Course"
+- Target: 30 credits (15 per semester)
+
+Year 2 (Core):
+- 4-5 core ${majorTitle} courses (200-300 level)
+- Continue with "Gen Ed Requirement" placeholders
+- Target: 30 credits
+
+Year 3 (Advanced):
+- 4-5 advanced ${majorTitle} courses (300-400 level)
+- Mix in "Elective" placeholders
+- Target: 30 credits
+
+Year 4 (Specialization):
+- 4-5 specialized ${majorTitle} courses (400 level)
+- Career-focused electives
+- Target: 30 credits
+
+TOTAL: ~${Math.floor(requiredCredits * 0.50)} credits of actual ${majorTitle} courses, rest placeholders` : `STRUCTURE YOUR ROADMAP:
+- Select advanced ${majorTitle} courses (300/400/500/600 level)
+- Focus on depth and specialization
+- Use "Elective" placeholder only if needed to reach ${requiredCredits} credits
+- Include ${Math.ceil(durationYears)} years of ${durationYears <= 2 ? 'fall + spring semesters' : 'coursework'}`}
+
+JSON FORMAT (follow exactly):
 {
   "program_name": "${degreeName} in ${majorTitle}",
   "institution": "${campusName}",
-  "total_credits": 0,
+  "total_credits": ${requiredCredits},
   "years": [
     {
       "year_number": 1,
       "semesters": [
         {
           "semester_name": "fall_semester",
-          "credits": 0,
+          "credits": 15,
           "courses": [
-            {"name": "EXACT CODE FROM JSON", "credits": NUMBER}
+            {"name": "ICS 111", "credits": 4},
+            {"name": "ICS 141", "credits": 3},
+            {"name": "Gen Ed Requirement", "credits": 3},
+            {"name": "Gen Ed Requirement", "credits": 3},
+            {"name": "Support Course", "credits": 3}
           ]
+        },
+        {
+          "semester_name": "spring_semester",
+          "credits": 15,
+          "courses": [...]
         }
       ]
     }
   ]
-}
-
-VERIFY BEFORE SUBMITTING: Check that EVERY course "name" exactly matches a "code" from the JSON array.`;
+}`;
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.1, // Very low for maximum accuracy
+      temperature: 0.2, // Low but not too low (allow some creativity for course selection)
       max_tokens: 4096,
     });
 
@@ -559,7 +669,7 @@ VERIFY BEFORE SUBMITTING: Check that EVERY course "name" exactly matches a "code
 
 /**
  * Validate roadmap structure and requirements
- * Replace hallucinated courses with "Elective" instead of throwing errors
+ * Replace hallucinated courses with "Elective" placeholder
  */
 function validateRoadmap(roadmap: Roadmap, requiredCredits: number, availableCourses: CourseData[]): void {
   if (!roadmap.years || !Array.isArray(roadmap.years)) {
@@ -568,7 +678,23 @@ function validateRoadmap(roadmap: Roadmap, requiredCredits: number, availableCou
 
   // Create a set of valid course codes for quick lookup
   const validCourseCodes = new Set(availableCourses.map(c => c.code));
+  
+  // Define SIMPLE placeholders - accept anything that looks like a placeholder
+  const placeholderPatterns = [
+    'Gen Ed Requirement',
+    'Support Course',
+    'Elective',
+    'Thesis/Capstone',
+    'Capstone',
+  ];
+  
+  const isPlaceholder = (name: string) => {
+    return placeholderPatterns.some(p => name.includes(p));
+  };
+  
   const invalidCourses: string[] = [];
+  const majorCourses: string[] = [];
+  const placeholderCourses: string[] = [];
 
   let totalCredits = 0;
   for (const year of roadmap.years) {
@@ -580,40 +706,64 @@ function validateRoadmap(roadmap: Roadmap, requiredCredits: number, availableCou
         throw new Error(`Invalid roadmap: semester missing courses`);
       }
       for (const course of semester.courses) {
-        // Check if course exists in database
-        if (!validCourseCodes.has(course.name)) {
+        // Extract course code (handle "ACC 200" or "ACC 200 - Title" formats)
+        const courseCode = course.name.split(' - ')[0].trim();
+        
+        const isValidCourse = validCourseCodes.has(courseCode);
+        const isValidPlaceholder = isPlaceholder(course.name);
+        
+        if (!isValidCourse && !isValidPlaceholder) {
+          // Hallucinated course - replace with placeholder
           const originalName = course.name;
           invalidCourses.push(originalName);
-          // Replace hallucinated course with Elective placeholder
-          course.name = "ELECTIVE";
-          console.warn(`   ⚠️  Replaced hallucinated course "${originalName}" with ELECTIVE in Year ${year.year_number}, ${semester.semester_name}`);
+          course.name = "Elective";
+          console.warn(`   [WARN]  Replaced hallucinated course "${originalName}" with Elective`);
+        } else if (isValidCourse) {
+          // Normalize to just the course code (remove title if present)
+          course.name = courseCode;
+          majorCourses.push(courseCode);
+        } else {
+          placeholderCourses.push(course.name);
         }
         totalCredits += course.credits;
       }
     }
   }
 
-  // Log warning if AI hallucinated courses (but don't throw error)
+  // Log warning if AI hallucinated courses
   if (invalidCourses.length > 0) {
-    console.warn(`⚠️  AI hallucinated ${invalidCourses.length} courses: ${invalidCourses.join(', ')}`);
-    console.warn(`   These have been replaced with ELECTIVE placeholders. Roadmap will still be saved.`);
+    console.warn(`[WARN]  AI hallucinated ${invalidCourses.length} courses: ${invalidCourses.join(', ')}`);
+    console.warn(`   These have been replaced with ELECTIVE placeholders.`);
   }
 
   roadmap.total_credits = totalCredits;
 
-  // Log credit status
-  const creditDifference = totalCredits - requiredCredits;
-  const percentOver = ((totalCredits / requiredCredits) - 1) * 100;
+  // Log distribution
+  const majorCredits = majorCourses.reduce((sum, name) => {
+    const course = availableCourses.find(c => c.code === name);
+    return sum + (course?.credits || 3);
+  }, 0);
+  const placeholderCredits = totalCredits - majorCredits;
   
+  console.log(`\n Course Distribution:`);
+  console.log(`  Major courses: ${majorCourses.length} courses (${majorCredits} credits)`);
+  console.log(`  Placeholders: ${placeholderCourses.length} items (${placeholderCredits} credits)`);
+  console.log(`  Total: ${totalCredits} credits (${requiredCredits} required)`);
+  
+  const majorPercent = ((majorCredits / totalCredits) * 100).toFixed(0);
+  console.log(`  Ratio: ${majorPercent}% major courses, ${100 - parseInt(majorPercent)}% placeholders`);
+
+  // Credit status
   if (totalCredits < requiredCredits) {
-    console.warn(`⚠️  Roadmap has ${totalCredits} credits but requires ${requiredCredits} (short by ${Math.abs(creditDifference)} credits)`);
-  } else if (totalCredits === requiredCredits) {
-    console.log(`✅ Roadmap exactly meets requirement: ${totalCredits} credits`);
-  } else if (percentOver <= 10) {
-    console.log(`✅ Roadmap has ${totalCredits} credits (${percentOver.toFixed(1)}% over required ${requiredCredits})`);
+    console.warn(`[WARN]  Short by ${requiredCredits - totalCredits} credits`);
+  } else if (totalCredits > requiredCredits * 1.1) {
+    console.warn(`[WARN]  Exceeds requirement by ${totalCredits - requiredCredits} credits`);
   } else {
-    console.warn(`⚠️  Roadmap has ${totalCredits} credits, which is ${percentOver.toFixed(1)}% over required ${requiredCredits}`);
+    console.log(`[OK] Credit requirement met ✓`);
   }
+  
+  // Simple success message
+  console.log(`\n[OK] Roadmap validated - ${majorCourses.length} major courses mapped, rest are placeholders for user to fill in later.`);
 }
 
 /**
