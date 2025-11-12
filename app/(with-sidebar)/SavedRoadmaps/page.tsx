@@ -123,7 +123,7 @@ export default function SavedRoadmapsPage() {
         <div className="px-6 py-4">
           <div className="rounded-lg border border-gray-300 bg-white p-4 shadow-sm">
             <p className="text-sm text-gray-700 mb-2">
-              Paste the roadmap JSON here. Supported shapes: PathwayData, {`{ pathwayData: ... }`}, or [PathwayData].
+              Paste the roadmap JSON here. Supported shapes: PathwayData or [PathwayData].
             </p>
             <textarea
               value={importText}
