@@ -386,7 +386,7 @@ export default async function Home() {
           
           <div className="border-t border-gray-200 pt-8 text-center text-sm text-black">
             <p>
-              Made with <Image src="/alohaq.gif" alt="aloha" width={30} height={30} className="inline-block align-bottom -translate-y-2" /> for UH students
+              Made with <Image src="/aloha-dance.gif" alt="aloha" width={40} height={40} className="inline-block align-bottom -translate-y-0" /> for UH students
             </p>
           </div>
         </div>
