@@ -15,10 +15,27 @@ export const getCourse = tool({
     }),
     execute: async ({ query, campus, limit = 15 }) => {
         try {
+            // Table readiness checks to avoid crashes on fresh environments
+            const tables = await db.execute(sql`SELECT 
+                to_regclass('public.courses') AS courses,
+                to_regclass('public.campuses') AS campuses,
+                to_regclass('public.embeddings') AS embeddings
+            `);
+            const first: any = Array.isArray(tables) ? tables[0] : (tables as any).rows?.[0];
+            const hasCourses = !!first?.courses;
+            const hasCampuses = !!first?.campuses;
+            const hasEmbeddings = !!first?.embeddings;
+
             // Check if it's a course code
             const codeMatch = query?.trim().match(/^([A-Z]+)\s*(\d+[A-Z]*)$/i);
             
             if (codeMatch) {
+                if (!hasCourses || !hasCampuses) {
+                    return {
+                        found: false,
+                        message: 'Course lookup isn\'t available yet (database not ready). I can still help plan a roadmap from general knowledge if you\'d like.',
+                    };
+                }
                 // Exact course lookup with metadata from embeddings
                 const [, prefix, number] = codeMatch;
                 const result = await db
@@ -75,6 +92,12 @@ export const getCourse = tool({
             // For keyword searches, use semantic search for relevance ranking
             if (query?.trim()) {
                 // Use semantic search with embeddings for better relevance
+                if (!hasEmbeddings) {
+                    return {
+                        found: false,
+                        message: 'Semantic course search is not available yet here. Try a specific course code (e.g., ICS 211) or I can still craft a general roadmap.',
+                    };
+                }
                 const results = await semanticSearch(query, limit, 0.3);
                 
                 // Filter by campus if specified using normalized matching
@@ -110,6 +133,12 @@ export const getCourse = tool({
             }
             
             // List courses for a specific campus
+            if (!hasCourses || !hasCampuses) {
+                return {
+                    found: false,
+                    message: `I can\'t browse courses for ${campus} yet (database not ready). I can still outline a reasonable semester plan based on typical curricula.`,
+                };
+            }
             const courses = await db
                 .select({
                     prefix: c.coursePrefix,

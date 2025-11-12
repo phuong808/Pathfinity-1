@@ -36,6 +36,11 @@ const data = {
             url: "/Roadmap",
             icon: Map,
         },
+    {
+      title: "Roadmap Viewer",
+      url: "/SavedRoadmaps",
+      icon: GraduationCap,
+    },
         {
             title: "Mentors",
             url: "/Mentors",
