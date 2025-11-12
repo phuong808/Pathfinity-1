@@ -216,7 +216,7 @@ export default async function Home() {
         </section>
 
         {/* Secondary Hero Image (AI animation) */}
-        <div className="max-w-7xl mx-auto mb-24">
+        <div className="max-w-7xl mx-auto mb-60">
           <Image
             src="/ai-anim-bg.webp"
             alt="AI animation"
