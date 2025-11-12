@@ -322,7 +322,7 @@ export default async function Home() {
             </p>
             <Link 
               href="/login" 
-              className="inline-flex items-center justify-center px-10 py-5 rounded-xl bg-black text-white font-bold text-lg hover:shadow-2xl transition-all duration-200 hover:scale-105 group"
+              className="inline-flex items-center justify-center px-10 py-5 rounded-4xl bg-black text-white font-bold text-lg hover:shadow-2xl transition-all duration-200 hover:scale-105 group"
             >
               Get Started
               <ArrowRight className="ml-2 w-5 h-5 text-white group-hover:translate-x-1 transition-transform" />
