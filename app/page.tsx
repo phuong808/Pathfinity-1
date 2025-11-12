@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth-server';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   Users, 
   Map, 
@@ -20,15 +21,15 @@ export default async function Home() {
 
   // Otherwise render the public landing page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50" style={{ fontFamily: 'PPMondwest, system-ui, sans-serif' }}>
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-200">
         <div className="flex items-center justify-between px-6 lg:px-12 py-4 max-w-7xl mx-auto w-full">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-xl transition-shadow">
+            {/* <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-xl transition-shadow">
               P
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+            </div> */}
+            <span className="text-3xl font-bold text-gray-700 hover:text-gray-900 transition-colors">
               Pathfinity
             </span>
           </Link>
@@ -89,7 +90,7 @@ export default async function Home() {
           </div>
 
           {/* Stats Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-24">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16">
             <div className="bg-white/80 backdrop-blur rounded-2xl p-6 text-center shadow-lg border border-gray-200">
               <div className="text-4xl font-bold text-pink-600 mb-2">24/7</div>
               <div className="text-gray-600 font-medium">AI Career Support</div>
@@ -102,6 +103,18 @@ export default async function Home() {
               <div className="text-4xl font-bold text-orange-600 mb-2">500+</div>
               <div className="text-gray-600 font-medium">Advisors & Clubs</div>
             </div>
+          </div>
+
+          {/* Hero Image */}
+          <div className="max-w-6xl mx-auto mb-24">
+            <Image 
+              src="/hero-anim-bg-2.webp" 
+              alt="Pathfinity Platform" 
+              width={1200}
+              height={800}
+              className="w-full h-auto rounded-3xl shadow-2xl"
+              priority
+            />
           </div>
         </section>
 
