@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/app/db/index';
 import { major as m, campus as cam, degree as d, majorDegree as md } from '@/app/db/schema';
 import { sql, eq } from 'drizzle-orm';
+import { normalizeHawaiian } from '@/lib/normalize-hawaiian';
 
 export const getMajorDetails = tool({
     description: "Get full details about a major: degrees offered, credits, duration. Use ONLY when user wants deep details about ONE major.",
@@ -14,7 +15,11 @@ export const getMajorDetails = tool({
         try {
             const conditions = [sql`${m.title} ILIKE ${`%${majorName}%`}`];
             if (campus) {
-                conditions.push(sql`${cam.name} ILIKE ${`%${campus}%`}`);
+                // Normalize Hawaiian characters for matching + check aliases
+                conditions.push(sql`(
+                    translate(LOWER(${cam.name}), 'āēīōūʻ''''', 'aeiou') LIKE ${`%${normalizeHawaiian(campus)}%`} OR
+                    ${cam.aliases}::text ILIKE ${`%${campus}%`}
+                )`);
             }
 
             const result = await db

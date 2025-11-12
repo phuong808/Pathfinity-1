@@ -58,7 +58,7 @@ export function NavMain({
                 <button
                 type="button"
                 onClick={() => router.push('/CreatePathway')}
-                className="flex items-center gap-2 w-full text-left text-white !bg-green-600 hover:!bg-green-700 active:!bg-green-800 !border-green-600 hover:text-white active:text-white focus-visible:!ring-2 focus-visible:!ring-green-300 transition-all duration-200"
+                className={`flex items-center gap-2 w-full text-left ${pathname === '/CreatePathway' ? '!text-white' : 'text-white'} hover:text-white active:text-white !bg-green-600 hover:!bg-green-700 active:!bg-green-800 !border-green-600 focus-visible:!ring-2 focus-visible:!ring-green-300`}
               >
                 <UserRoundPlus />
                 <span>Create Pathway</span>

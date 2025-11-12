@@ -4,7 +4,7 @@ import { db } from '@/app/db/index';
 import { campus as cam } from '@/app/db/schema';
 
 export const getCampuses = tool({
-    description: "List all UH system campuses. Use when asked 'what campuses' or 'list universities'.",
+    description: "List all campuses in the University of Hawaii system. Use when asked 'what campuses are there' or 'list UH campuses'.",
     inputSchema: z.object({}),
     execute: async () => {
         try {
@@ -16,7 +16,12 @@ export const getCampuses = tool({
                 .from(cam)
                 .orderBy(cam.type, cam.name);
 
-            if (!campuses?.length) return 'No campuses found.';
+            if (!campuses?.length) {
+                return {
+                    found: false,
+                    message: 'No campuses found in the system.',
+                };
+            }
 
             const unis = campuses.filter(c => c.type === 'university');
             const ccs = campuses.filter(c => c.type === 'community_college');
@@ -25,26 +30,35 @@ export const getCampuses = tool({
             const lines = [`**${campuses.length} UH System Campuses:**\n`];
             
             if (unis.length) {
-                lines.push('🎓 **Universities:**');
+                lines.push('Universities:');
                 unis.forEach(c => lines.push(`  • ${c.name}`));
                 lines.push('');
             }
             
             if (ccs.length) {
-                lines.push('🏫 **Community Colleges:**');
+                lines.push('Community Colleges:');
                 ccs.forEach(c => lines.push(`  • ${c.name}`));
                 lines.push('');
             }
             
             if (other.length) {
-                lines.push('**Other:**');
+                lines.push('Other:');
                 other.forEach(c => lines.push(`  • ${c.name}`));
             }
 
-            return lines.join('\n');
+            return {
+                found: true,
+                count: campuses.length,
+                campuses: campuses,
+                formatted: lines.join('\n'),
+            };
         } catch (error) {
             console.error('getCampuses error:', error);
-            return 'Having trouble loading campuses. Try again?';
+            return {
+                found: false,
+                error: true,
+                message: 'I\'m having trouble loading the campus list right now. Please try again in a moment.',
+            };
         }
     }
 });
