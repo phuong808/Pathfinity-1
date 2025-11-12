@@ -86,7 +86,7 @@ export default function SavedRoadmapsPage() {
           <div>
             <h1 className="text-3xl font-bold text-white">{headerTitle}</h1>
             <p className="text-sm text-blue-100 mt-2 font-medium">
-              This page visualizes a roadmap from a provided JSON passed locally. Saving to your account will be added later.
+              This page visualizes a roadmap from locally provided JSON data. Saving to your account will be added later.
             </p>
           </div>
           <div className="flex gap-2 items-center">
