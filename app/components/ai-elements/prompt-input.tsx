@@ -246,6 +246,8 @@ export type RecordingContextType = {
   levels: number[];
   spectrum: number[];
   elapsedMs: number;
+  isProcessing: boolean;
+  _setIsProcessing: (v: boolean) => void;
   // internal setters exposed to update state
   _setIsRecording: (v: boolean) => void;
   _pushLevel: (v: number) => void;
@@ -763,6 +765,7 @@ export const PromptInput = ({
   const [recLevels, _setRecLevels] = useState<number[]>([]);
   const [recElapsedMs, _setRecElapsedMs] = useState<number>(0);
   const [recSpectrum, _setRecSpectrum] = useState<number[]>([]);
+  const [recIsProcessing, _setRecIsProcessing] = useState<boolean>(false);
 
   const _pushRecLevel = useCallback((v: number) => {
     _setRecLevels((prev) => {
@@ -781,12 +784,14 @@ export const PromptInput = ({
       levels: recLevels,
       spectrum: recSpectrum,
       elapsedMs: recElapsedMs,
+      isProcessing: recIsProcessing,
+      _setIsProcessing: _setRecIsProcessing,
       _setIsRecording: _setRecIsRecording,
       _pushLevel: _pushRecLevel,
       _setElapsedMs: _setRecElapsedMs,
       _setSpectrum: _setRecSpectrum,
     }),
-    [recIsRecording, recLevel, recLevels, recElapsedMs, _pushRecLevel, recSpectrum]
+    [recIsRecording, recLevel, recLevels, recElapsedMs, _pushRecLevel, recSpectrum, recIsProcessing]
   );
 
   const wrapped = (
@@ -843,8 +848,9 @@ export const PromptInputTextarea = ({
 
       const dpr = Math.max(1, window.devicePixelRatio || 1);
       const width = Math.max(100, wrapper.clientWidth);
-  // increase the visual waveform height (add ~80px) but cap to avoid overflow
-  const visHeight = Math.min(140, Math.max(28, wrapper.clientHeight - 8 + 80));
+  // reduce waveform height by ~50% from previous value: keep within sensible bounds
+  const original = Math.min(140, Math.max(28, wrapper.clientHeight - 8 + 80));
+  const visHeight = Math.max(20, Math.round(original * 0.5));
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(visHeight * dpr);
       canvas.style.width = `${width}px`; 
@@ -1053,17 +1059,26 @@ export const PromptInputTextarea = ({
   }
 
   return (
-    <InputGroupTextarea
-      className={cn("field-sizing-content max-h-48 min-h-16", className)}
-      name="message"
-      onCompositionEnd={() => setIsComposing(false)}
-      onCompositionStart={() => setIsComposing(true)}
-      onKeyDown={handleKeyDown}
-      onPaste={handlePaste}
-      placeholder={placeholder}
-      {...props}
-      {...controlledProps}
-    />
+    <>
+      <InputGroupTextarea
+        className={cn("field-sizing-content max-h-48 min-h-16", className)}
+        name="message"
+        onCompositionEnd={() => setIsComposing(false)}
+        onCompositionStart={() => setIsComposing(true)}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        placeholder={placeholder}
+        {...props}
+        {...controlledProps}
+      />
+
+      {recordingCtx?.isProcessing && (
+        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2Icon className="size-4 animate-spin" />
+          <span>Processing transcription…</span>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -1329,6 +1344,10 @@ export const PromptInputSpeechButton = ({
     if (chunks.length === 0) return;
     const blob = new Blob(chunks, { type: "audio/webm" });
 
+    // show processing indicator while we upload and wait for transcription
+    try {
+      recordingCtx?._setIsProcessing(true);
+    } catch {}
     try {
       const fd = new FormData();
       fd.append("file", blob, "audio.webm");
@@ -1356,6 +1375,10 @@ export const PromptInputSpeechButton = ({
       }
     } catch (err) {
       console.error("Speech upload/transcribe error", err);
+    } finally {
+      try {
+        recordingCtx?._setIsProcessing(false);
+      } catch {}
     }
   }, [controller, textareaRef, onTranscriptionChange, recordingCtx]);
 
