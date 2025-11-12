@@ -168,7 +168,7 @@ When the user asks for a semester-by-semester plan or roadmap, or after enough p
 }
 2) JSON MUST be valid: double quotes for keys/strings, numbers as numbers, no comments, no trailing commas.
 3) Output ONLY the JSON inside a fenced code block labeled as json. Do not include any comments inside the block.
-4) Do NOT add ANY text before or after the code block. The response must contain only the single fenced JSON block.
+4) When producing the final roadmap output, do NOT add ANY text before or after the code block. The response must contain only the single fenced JSON block.
 5) Do not wrap the object in any other property (no { "pathwayData": { ... } } wrappers). The top-level object MUST be PathwayData with keys: program_name, institution, total_credits, years.
 6) Use realistic credit loads (12-16 in fall/spring; optional/short summer). If data is missing, use placeholders.
 7) Do not invent impossible course loads.
