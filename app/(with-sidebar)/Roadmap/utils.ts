@@ -42,6 +42,12 @@ export function getSemesterDisplayName(semesterName: string): string {
     'fall_semester': 'Fall Semester',
     'spring_semester': 'Spring Semester',
     'summer_semester': 'Summer Semester',
+    'first_semester': 'Fall Semester',
+    'second_semester': 'Spring Semester',
+    'third_semester': 'Fall Semester',
+    'fourth_semester': 'Spring Semester',
+    'fifth_semester': 'Summer Semester',
+    'sixth_semester': 'Summer Semester',
   };
   return map[semesterName] || semesterName;
 }
@@ -58,9 +64,12 @@ export function pathwayToTimeline(
   const baseYear = 2025; // Starting year for the timeline
 
   pathwayData.years.forEach((year) => {
-    year.semesters.forEach((semester) => {
+    year.semesters.forEach((semester, semesterIndex) => {
       // Skip empty summer semesters
-      if (semester.courses.length === 0 && semester.semester_name === 'summer_semester') {
+      if (semester.courses.length === 0 && 
+          (semester.semester_name === 'summer_semester' || 
+           semester.semester_name === 'fifth_semester' || 
+           semester.semester_name === 'sixth_semester')) {
         return;
       }
 
@@ -68,15 +77,25 @@ export function pathwayToTimeline(
       let startMonth = 0;
       let endMonth = 4;
       
-      if (semester.semester_name === 'fall_semester') {
+      // Handle traditional semester names
+      if (semester.semester_name === 'fall_semester' || semester.semester_name === 'first_semester' || semester.semester_name === 'third_semester') {
         startMonth = 8; // September
         endMonth = 11; // December
-      } else if (semester.semester_name === 'spring_semester') {
+      } else if (semester.semester_name === 'spring_semester' || semester.semester_name === 'second_semester' || semester.semester_name === 'fourth_semester') {
         startMonth = 0; // January
         endMonth = 4; // May
-      } else if (semester.semester_name === 'summer_semester') {
+      } else if (semester.semester_name === 'summer_semester' || semester.semester_name === 'fifth_semester' || semester.semester_name === 'sixth_semester') {
         startMonth = 5; // June
         endMonth = 7; // August
+      } else {
+        // Fallback: determine by position in year (odd=fall, even=spring)
+        if (semesterIndex % 2 === 0) {
+          startMonth = 8; // September (Fall)
+          endMonth = 11; // December
+        } else {
+          startMonth = 0; // January (Spring)
+          endMonth = 4; // May
+        }
       }
 
       const actualYear = baseYear + year.year_number - 1;
@@ -100,6 +119,7 @@ export function pathwayToTimeline(
           endMonth,
           description: `${course.credits} credits • ${semesterLabel}`,
           courseDetails,
+          credits: course.credits, // Include credits from pathway data
         });
       });
 
