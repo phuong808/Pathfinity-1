@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Sparkles
 } from 'lucide-react';
+import { InteractiveChatbox } from '@/app/components/ui/interactive-chatbox';
 
 export default async function Home() {
   const session = await getSession();
@@ -99,16 +100,23 @@ export default async function Home() {
             </div>
           </div> */}
 
-          {/* Hero Image */}
-          <div className="max-w-6xl mx-auto mb-42">
-            <Image 
-              src="/hero-anim-bg-2.webp" 
-              alt="Pathfinity Platform" 
-              width={1200}
-              height={800}
-              className="w-full h-[450px] object-cover rounded-xl shadow-2xl"
-              priority
-            />
+          {/* Hero Image with Interactive Chatbox */}
+          <div className="max-w-6xl mx-auto mb-42 relative">
+            <div className="relative rounded-xl shadow-2xl overflow-hidden">
+              <Image 
+                src="/hero-anim-bg-2.webp" 
+                alt="Pathfinity Platform" 
+                width={1200}
+                height={800}
+                className="w-full h-[450px] object-cover"
+                priority
+              />
+              
+              {/* Interactive Chatbox centered both horizontally and vertically */}
+              <div className="absolute inset-0 flex items-center justify-center px-6">
+                <InteractiveChatbox />
+              </div>
+            </div>
           </div>
         </section>
 
