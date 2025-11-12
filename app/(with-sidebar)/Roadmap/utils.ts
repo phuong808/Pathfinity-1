@@ -119,6 +119,7 @@ export function pathwayToTimeline(
           endMonth,
           description: `${course.credits} credits • ${semesterLabel}`,
           courseDetails,
+          credits: course.credits, // Include credits from pathway data
         });
       });
 
