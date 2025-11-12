@@ -82,17 +82,28 @@ export default function College({ form, setForm, colleges, majors, degrees }: Pr
     }
 
     // Fetch degrees when major is selected
-    if (!form.major) {
+    if (!form.major || !form.college) {
       setDegreeList([])
     } else {
       const cacheKey = `${form.college}:${form.major}`
       if (cache.degrees.has(cacheKey)) {
-        setDegreeList(cache.degrees.get(cacheKey)!)
+        const cached = cache.degrees.get(cacheKey)!
+        console.log(`[Degrees] Using cached degrees for ${cacheKey}:`, cached)
+        setDegreeList(cached)
       } else {
-        fetch(`/api/degrees?majorTitle=${encodeURIComponent(form.major)}`, { signal: controller.signal })
+        const params = new URLSearchParams({
+          majorTitle: form.major,
+          campusName: form.college,
+        })
+        const url = `/api/degrees?${params.toString()}`
+        console.log(`[Degrees] Fetching from API:`, url)
+        
+        fetch(url, { signal: controller.signal })
           .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch degrees'))
           .then((data: DegreeItem[]) => {
+            console.log(`[Degrees] Received from API:`, data)
             const names = data.map(d => d.name || d.code)
+            console.log(`[Degrees] Degree names:`, names)
             cache.degrees.set(cacheKey, names)
             setDegreeList(names)
           })
@@ -116,7 +127,12 @@ export default function College({ form, setForm, colleges, majors, degrees }: Pr
       <label className="block mt-3">
         <span className="text-sm">College</span>
         <div className="mt-1">
-          <Select value={form.college} onValueChange={(v) => setForm({ ...form, college: v, major: "", degree: "" })}>
+          <Select value={form.college} onValueChange={(v) => {
+            // Clear cache when college changes to ensure fresh data
+            cache.majors.clear()
+            cache.degrees.clear()
+            setForm({ ...form, college: v, major: "", degree: "" })
+          }}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a college" />
             </SelectTrigger>
@@ -144,7 +160,12 @@ export default function College({ form, setForm, colleges, majors, degrees }: Pr
             <label className="block mt-3">
               <span className="text-sm">Major</span>
               <div className="mt-1">
-                <Select value={form.major} onValueChange={(v) => setForm({ ...form, major: v, degree: "" })}>
+                <Select value={form.major} onValueChange={(v) => {
+                  // Clear degree cache when major changes
+                  const oldCacheKey = `${form.college}:${form.major}`
+                  cache.degrees.delete(oldCacheKey)
+                  setForm({ ...form, major: v, degree: "" })
+                }}>
                   <SelectTrigger className="w-full" disabled={!form.college}>
                     <SelectValue placeholder={form.college ? "Select a major" : "Select a college first"} />
                   </SelectTrigger>

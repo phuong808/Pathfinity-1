@@ -1,24 +1,30 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/app/db/index'
-import { major, degree, majorDegree } from '@/app/db/schema'
-import { eq } from 'drizzle-orm'
+import { major, degree, majorDegree, campus } from '@/app/db/schema'
+import { eq, and } from 'drizzle-orm'
 
 // In-memory cache
 const cache = new Map<string, { data: any[], timestamp: number }>()
 const CACHE_TTL = 1000 * 60 * 30 // 30 minutes
 
 /**
- * GET /api/degrees?majorId=... or ?majorTitle=...
- * Returns array of { id, code, name, level }
+ * GET /api/degrees?majorTitle=...&campusName=...
+ * Returns array of { id, code, name, level } for degrees available for that major at that campus
  */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const majorId = searchParams.get('majorId')
     const majorTitle = searchParams.get('majorTitle')
+    const campusName = searchParams.get('campusName')
 
-    let targetMajorId = majorId ? Number(majorId) : undefined
-    const cacheKey = majorId || majorTitle || ''
+    if (!majorTitle || !campusName) {
+      return NextResponse.json(
+        { error: 'Both majorTitle and campusName are required' },
+        { status: 400 }
+      )
+    }
+
+    const cacheKey = `${campusName}:${majorTitle}`
 
     // Check cache first
     const cached = cache.get(cacheKey)
@@ -30,15 +36,36 @@ export async function GET(req: Request) {
       })
     }
 
-    if (!targetMajorId && majorTitle) {
-      const found = await db.select().from(major).where(eq(major.title, majorTitle)).limit(1)
-      if (found.length === 0) return NextResponse.json([], { status: 200 })
-      targetMajorId = found[0].id
+    // First, get the campus ID
+    const campuses = await db
+      .select()
+      .from(campus)
+      .where(eq(campus.name, campusName))
+      .limit(1)
+
+    if (campuses.length === 0) {
+      return NextResponse.json([], { status: 200 })
     }
 
-    if (!targetMajorId) {
-      return NextResponse.json({ error: 'majorId or majorTitle required' }, { status: 400 })
+    const campusId = campuses[0].id
+
+    // Then, find the major at this specific campus
+    const majors = await db
+      .select()
+      .from(major)
+      .where(
+        and(
+          eq(major.campusId, campusId),
+          eq(major.title, majorTitle)
+        )
+      )
+      .limit(1)
+
+    if (majors.length === 0) {
+      return NextResponse.json([], { status: 200 })
     }
+
+    const targetMajorId = majors[0].id
 
     // join majorDegree -> degree
     const rows = await db
