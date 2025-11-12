@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { db } from '@/app/db/index';
 import { degree as d } from '@/app/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 export const getDegrees = tool({
     description: "List all degree and certificate types available in the UH system (B.S., B.A., M.A., Ph.D., Associate, Certificate, etc.). Use when asked about degree types or credential levels.",
@@ -11,6 +11,15 @@ export const getDegrees = tool({
     }),
     execute: async ({ level }) => {
         try {
+            // Guard for missing degrees table
+            const res = await db.execute(sql`SELECT to_regclass('public.degrees') AS degrees`);
+            const first: any = Array.isArray(res) ? res[0] : (res as any).rows?.[0];
+            if (!first?.degrees) {
+                return {
+                    found: false,
+                    message: 'Degree types are not available yet in this environment.',
+                };
+            }
             let query = db.select({
                 code: d.code,
                 name: d.name,
