@@ -170,9 +170,9 @@ export default function Career({ form, setForm }: Props) {
 
                 {suggestions.length > 0 && (
                   <CommandGroup heading="Select a Career">
-                    {suggestions.map((suggestion) => (
+                    {suggestions.map((suggestion, index) => (
                       <CommandItem
-                        key={suggestion.id}
+                        key={`${suggestion.id}-${index}`}
                         value={suggestion.name}
                         onSelect={() => selectSuggestion(suggestion)}
                         className="cursor-pointer"
