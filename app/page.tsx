@@ -10,6 +10,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { InteractiveChatbox } from '@/app/components/ui/interactive-chatbox';
+import SampleConversation from '@/app/components/chat/sample-conversation';
 
 export default async function Home() {
   const session = await getSession();
@@ -223,16 +224,24 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Secondary Hero Image (AI animation) */}
+        {/* Secondary Hero Image (AI animation with Sample Conversation) */}
         <div className="max-w-7xl mx-auto mb-60">
-          <Image
-            src="/ai-anim-bg.webp"
-            alt="AI animation"
-            width={1200}
-            height={800}
-            className="w-full h-[640px] object-cover rounded-xl shadow-2xl mb-12"
-            priority
-          />
+          <div className="relative rounded-xl shadow-2xl overflow-hidden">
+            <Image
+              src="/ai-anim-bg.webp"
+              alt="AI animation"
+              width={1200}
+              height={800}
+              className="w-full h-[640px] object-cover"
+              priority
+            />
+            {/* Sample Conversation Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center p-6">
+              <div className="w-full max-w-5xl">
+                <SampleConversation />
+              </div>
+            </div>
+          </div>
           <p className="mt-6 mx-auto max-w-[600px] text-center text-black-600 text-lg">
             View a customized roadmap showing exactly what courses to take, skills to develop, and milestones to hit each semester on your path to success.
           </p>
