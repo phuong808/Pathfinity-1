@@ -1,46 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { ArrowUp, Paperclip, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-const placeholderQuestions = [
+const PLACEHOLDER_QUESTIONS = [
   "Hey, welcome to UH! Want to explore majors, careers, or just browse interests?",
   "What classes did you actually enjoy in high school, even just a little?",
   "Tell me about your dream job - what would you love to do?",
   "What subjects make you curious or excited to learn more?",
   "Which activities or hobbies do you spend the most time on?",
-];
+] as const;
 
-export function InteractiveChatbox() {
+const TYPING_SPEED = 50; // ms per character
+const QUESTION_DISPLAY_TIME = 3000; // ms to display full question
+
+export const InteractiveChatbox = memo(function InteractiveChatbox() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const router = useRouter();
 
+  const handleClick = useCallback(() => {
+    router.push('/login');
+  }, [router]);
+
   useEffect(() => {
-    const currentQuestion = placeholderQuestions[currentQuestionIndex];
+    const currentQuestion = PLACEHOLDER_QUESTIONS[currentQuestionIndex];
     
     if (displayedText.length < currentQuestion.length) {
       // Typing animation - add one character at a time
       const timeout = setTimeout(() => {
         setDisplayedText(currentQuestion.slice(0, displayedText.length + 1));
-      }, 50); // Type each character every 50ms
+      }, TYPING_SPEED);
       
       return () => clearTimeout(timeout);
     } else if (displayedText === currentQuestion) {
       // Finished typing, wait before moving to next question
       const timeout = setTimeout(() => {
         setDisplayedText('');
-        setCurrentQuestionIndex((prev) => (prev + 1) % placeholderQuestions.length);
-      }, 3000); // Wait 3 seconds after finishing typing
+        setCurrentQuestionIndex((prev) => (prev + 1) % PLACEHOLDER_QUESTIONS.length);
+      }, QUESTION_DISPLAY_TIME);
       
       return () => clearTimeout(timeout);
     }
   }, [displayedText, currentQuestionIndex]);
-
-  const handleClick = () => {
-    router.push('/login');
-  };
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -92,4 +95,4 @@ export function InteractiveChatbox() {
       </div>
     </div>
   );
-}
+});

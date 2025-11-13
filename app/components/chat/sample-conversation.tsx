@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { Card } from "@/app/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +34,76 @@ interface ChatMessage {
   delay: number;
   isPathwayChunk?: boolean; // To identify pathway-related messages
 }
+
+// Constants
+const CONSISTENT_DELAY = 2500; // Consistent delay for all pathway chunks
+const CONVERSATION_SWITCH_DELAY = 3000; // Wait time before switching conversations
+
+// Helper function to format semester names
+const formatSemesterName = (name: string) => {
+  return name
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+// Memoized Course List Component
+const CourseList = memo(function CourseList({ courses }: { courses: Course[] }) {
+  return (
+    <ul className="pl-4 space-y-1">
+      {courses.map((course, courseIdx) => (
+        <li key={courseIdx} className="text-sm text-muted-foreground">
+          • {course.name} - {course.credits} credits
+        </li>
+      ))}
+    </ul>
+  );
+});
+
+// Memoized Semester Component
+const SemesterCard = memo(function SemesterCard({ semester }: { semester: Semester }) {
+  return (
+    <div className="space-y-2">
+      <h5 className="text-base font-medium text-foreground">
+        {formatSemesterName(semester.semester_name)} ({semester.credits} credits)
+      </h5>
+      <CourseList courses={semester.courses} />
+    </div>
+  );
+});
+
+// Memoized Message Component
+const ChatMessageComponent = memo(function ChatMessageComponent({ 
+  message 
+}: { 
+  message: ChatMessage 
+}) {
+  return (
+    <div
+      className={cn(
+        "flex",
+        message.role === "user" ? "justify-end" : "justify-start"
+      )}
+    >
+      <div
+        className={cn(
+          "rounded-lg p-4 animate-in fade-in slide-in-from-bottom-2 duration-500",
+          message.role === "user"
+            ? "bg-primary text-primary-foreground shadow-md max-w-[80%]"
+            : message.isPathwayChunk
+            ? "bg-secondary text-secondary-foreground shadow-md sm:min-w-[60%] md:min-w-[60%] lg:min-w-[40%] min-w-[60%] max-w-[60%]"
+            : "bg-secondary text-secondary-foreground shadow-md max-w-[80%]"
+        )}
+      >
+        {typeof message.content === "string" ? (
+          <p className="text-sm leading-relaxed">{message.content}</p>
+        ) : (
+          message.content
+        )}
+      </div>
+    </div>
+  );
+});
 
 const pathways: Record<string, Pathway> = {
   biochemistry: {
@@ -395,14 +465,6 @@ const pathways: Record<string, Pathway> = {
 const createPathwayMessages = (pathway: Pathway, startId: number): ChatMessage[] => {
   const messages: ChatMessage[] = [];
   let currentId = startId;
-  const CONSISTENT_DELAY = 2500; // Consistent delay for all pathway chunks
-  
-  const formatSemesterName = (name: string) => {
-    return name
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
 
   // First message: Program info
   const programInfo = (
@@ -446,20 +508,7 @@ const createPathwayMessages = (pathway: Pathway, startId: number): ChatMessage[]
     year.semesters
       .filter((semester) => semester.courses.length > 0)
       .forEach((semester) => {
-        const semesterContent = (
-          <div className="space-y-2">
-            <h5 className="text-base font-medium text-foreground">
-              {formatSemesterName(semester.semester_name)} ({semester.credits} credits)
-            </h5>
-            <ul className="pl-4 space-y-1">
-              {semester.courses.map((course, courseIdx) => (
-                <li key={courseIdx} className="text-sm text-muted-foreground">
-                  • {course.name} - {course.credits} credits
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
+        const semesterContent = <SemesterCard key={currentId} semester={semester} />;
         
         messages.push({
           id: currentId++,
@@ -593,7 +642,7 @@ export default function SampleConversation() {
         setCurrentConversation(conversationKeys[nextIdx]);
         setVisibleMessages([]);
         setCurrentIndex(0);
-      }, 3000);
+      }, CONVERSATION_SWITCH_DELAY);
     }
   }, [currentIndex, messages, currentConversation]);
 
@@ -624,30 +673,7 @@ export default function SampleConversation() {
           className="h-[500px] overflow-y-scroll space-y-4 p-6 scrollbar-hide"
         >
           {visibleMessages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex",
-                message.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              <div
-                className={cn(
-                  "rounded-lg p-4 animate-in fade-in slide-in-from-bottom-2 duration-500",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground shadow-md max-w-[80%]"
-                    : message.isPathwayChunk
-                    ? "bg-secondary text-secondary-foreground shadow-md w-[40%]"
-                    : "bg-secondary text-secondary-foreground shadow-md max-w-[80%]"
-                )}
-              >
-                {typeof message.content === "string" ? (
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                ) : (
-                  message.content
-                )}
-              </div>
-            </div>
+            <ChatMessageComponent key={message.id} message={message} />
           ))}
         </div>
       </Card>
