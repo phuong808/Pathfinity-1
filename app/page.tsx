@@ -152,7 +152,7 @@ export default async function Home() {
             {FEATURES.map((feature, index) => (
               <div 
                 key={index}
-                className="bg-[#fefffc] rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all border-3 border-gray-100 hover:border-gray-200"
+                className="bg-#fefffc rounded-2xl p-8 shadow-md hover:shadow-xl transition-all border-2 border-gray-100 hover:border-gray-300"
               >
                 <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
                 <p className="text-gray-600 leading-relaxed mb-6">
