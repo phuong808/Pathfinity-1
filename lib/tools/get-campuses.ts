@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { db } from '@/app/db/index';
+import { sql } from 'drizzle-orm';
 import { campus as cam } from '@/app/db/schema';
 
 export const getCampuses = tool({
@@ -8,6 +9,16 @@ export const getCampuses = tool({
     inputSchema: z.object({}),
     execute: async () => {
         try {
+            // Check if campuses table exists to avoid runtime errors on fresh DBs
+            const res = await db.execute(sql`SELECT to_regclass('public.campuses') AS campuses`);
+            const first: any = Array.isArray(res) ? res[0] : (res as any).rows?.[0];
+            if (!first?.campuses) {
+                return {
+                    found: false,
+                    message: 'Campus data is not available yet in this environment.',
+                };
+            }
+
             const campuses = await db
                 .select({
                     name: cam.name,

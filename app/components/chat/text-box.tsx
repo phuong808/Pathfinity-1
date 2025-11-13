@@ -23,6 +23,8 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/app/components/ai-elements/prompt-input"
+import { TTSToggle } from "@/app/components/ai-elements/tts"
+import { TTSSettings } from "@/app/components/ai-elements/tts-settings"
 
 type ModelOption = { id: string; name: string }
 
@@ -35,7 +37,6 @@ type Props = {
   setModel: (v: string) => void
   status: any
   className?: string
-  onStartVoice?: () => void
 }
 
 export function TextBox({
@@ -47,7 +48,6 @@ export function TextBox({
   setModel,
   status,
   className,
-  onStartVoice,
 }: Props) {
   return (
     
@@ -69,33 +69,36 @@ export function TextBox({
 
         <PromptInputFooter>
           <PromptInputTools className="flex w-full items-center justify-between">
-            <PromptInputActionMenu>
-              <PromptInputActionMenuTrigger />
-              <PromptInputActionMenuContent>
-                <PromptInputActionAddAttachments />
-              </PromptInputActionMenuContent>
-            </PromptInputActionMenu>
+            <div className="flex items-center gap-2">
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
 
-            <PromptInputModelSelect onValueChange={setModel} value={model}>
-              <PromptInputModelSelectTrigger>
-                <PromptInputModelSelectValue />
-              </PromptInputModelSelectTrigger>
-              <PromptInputModelSelectContent>
-                {models.map((modelOption) => (
-                  <PromptInputModelSelectItem
-                    key={modelOption.id}
-                    value={modelOption.id}
-                  >
-                    {modelOption.name}
-                  </PromptInputModelSelectItem>
-                ))}
-              </PromptInputModelSelectContent>
-            </PromptInputModelSelect>
+              <PromptInputModelSelect onValueChange={setModel} value={model}>
+                <PromptInputModelSelectTrigger>
+                  <PromptInputModelSelectValue />
+                </PromptInputModelSelectTrigger>
+                <PromptInputModelSelectContent>
+                  {models.map((modelOption) => (
+                    <PromptInputModelSelectItem
+                      key={modelOption.id}
+                      value={modelOption.id}
+                    >
+                      {modelOption.name}
+                    </PromptInputModelSelectItem>
+                  ))}
+                </PromptInputModelSelectContent>
+              </PromptInputModelSelect>
+            </div>
 
-            <PromptInputSpeechButton
-              className="ml-auto border rounded-full text-black"
-              onClick={() => onStartVoice && onStartVoice()}
-            />
+            <div className="flex items-center gap-1">
+              <TTSToggle className="border rounded-full text-black" />
+              <TTSSettings className="border rounded-full text-black" />
+              <PromptInputSpeechButton className="border rounded-full text-black" />
+            </div>
           </PromptInputTools>
           <PromptInputSubmit status={status} className="ml-2 rounded-full"/>
         </PromptInputFooter>

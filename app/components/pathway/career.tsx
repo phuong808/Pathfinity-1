@@ -19,6 +19,7 @@ import {
 interface CareerFormData {
   career: string
   careerId?: string | null
+  careerCode?: string | null // O*NET-SOC code
   careerValidated?: boolean
 }
 
@@ -29,8 +30,10 @@ type Props = {
 
 interface TitleSuggestion {
   id: string
+  code: string
   name: string
   displayName: string
+  isAlternate?: boolean
 }
 
 export default function Career({ form, setForm }: Props) {
@@ -96,6 +99,7 @@ export default function Career({ form, setForm }: Props) {
       ...form,
       career: suggestion.name,
       careerId: suggestion.id,
+      careerCode: suggestion.code, // Store O*NET-SOC code
       careerValidated: true,
     })
   }
@@ -127,7 +131,8 @@ export default function Career({ form, setForm }: Props) {
                   setForm({ 
                     ...form, 
                     career: val, 
-                    careerId: null, 
+                    careerId: null,
+                    careerCode: null, 
                     careerValidated: false 
                   })
                 }}

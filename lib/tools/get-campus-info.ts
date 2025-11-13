@@ -1,8 +1,8 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { db } from '@/app/db/index';
-import { campus as cam } from '@/app/db/schema';
 import { sql } from 'drizzle-orm';
+import { campus as cam } from '@/app/db/schema';
 import { 
   searchSchoolByIpeds, 
   formatCurrency, 
@@ -19,6 +19,15 @@ export const getCampusInfo = tool({
   }),
   execute: async ({ campusName }) => {
     try {
+      // Table existence guard for campuses
+      const reg = await db.execute(sql`SELECT to_regclass('public.campuses') AS campuses`);
+      const first: any = Array.isArray(reg) ? reg[0] : (reg as any).rows?.[0];
+      if (!first?.campuses) {
+        return {
+          found: false,
+          message: 'Campus info is not available yet (database not migrated). I can still give a general overview based on public knowledge.',
+        };
+      }
       // First, lookup campus in DB to get IPEDS ID
       // Use centralized normalization + alias matching
       const campusResult = await db

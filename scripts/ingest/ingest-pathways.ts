@@ -1,4 +1,5 @@
 import { db } from "@/app/db";
+import * as crypto from "crypto";
 import { pathway } from "@/app/db/schema";
 import { eq } from "drizzle-orm";
 import * as fs from "fs";
@@ -93,6 +94,7 @@ async function ingestPathways() {
       } else {
         // Insert new pathway
         await db.insert(pathway).values({
+          id: crypto.randomUUID(),
           programName: pathwayData.program_name,
           institution: pathwayData.institution,
           totalCredits: pathwayData.total_credits.toString(),

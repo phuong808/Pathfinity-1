@@ -23,6 +23,7 @@ export interface TimelineItem {
   endMonth: number; // 0-11
   description?: string;
   courseDetails?: CourseDetails;
+  credits?: number; // Credits from pathway data
 }
 
 // Types for pathway structure
