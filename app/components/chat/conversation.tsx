@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useEffect, useMemo, useRef, useCallback } from "react"
+import { Fragment, useEffect, useMemo, useRef, useCallback, useState } from "react"
 import {
   Conversation as AiConversation,
   ConversationContent,
@@ -9,7 +9,6 @@ import {
 } from "@/app/components/ai-elements/conversation"
 import { Message, MessageContent } from "@/app/components/ai-elements/message"
 import { Response } from "@/app/components/ai-elements/response"
-import { Button } from "@/app/components/ui/button"
 import { useRouter } from "next/navigation"
 import { Loader } from "@/app/components/ai-elements/loader"
 import { useTTS } from "@/app/components/ai-elements/tts"
@@ -39,7 +38,57 @@ function asRole(r: unknown): "assistant" | "system" | "user" {
   return r === "assistant" || r === "system" || r === "user" ? r : "assistant";
 }
 
+// Lazy JSON extractor component to avoid blocking main render when messages are large.
+function PathwayJsonActions({ text, messageRole, onOpen }: { text: string; messageRole: string; onOpen: (json: string) => void }) {
+  const [json, setJson] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (messageRole !== 'assistant') return;
+    // Defer heavy parsing until browser is idle or after a short timeout.
+    const run = () => {
+      try {
+        const extracted = extractPathwayJsonFromText(text);
+        setJson(extracted);
+      } catch {
+        // swallow parsing errors
+      }
+    };
+    // narrow window type for requestIdleCallback if present
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => void };
+    if (typeof w.requestIdleCallback === 'function') {
+      w.requestIdleCallback(run, { timeout: 500 });
+    } else {
+      const t = setTimeout(run, 50);
+      return () => clearTimeout(t);
+    }
+  }, [text, messageRole]);
+
+  if (!json) return null;
+  return (
+    <div className="mt-2">
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            try {
+              sessionStorage.setItem("pathfinity.roadmapDraft", json);
+            } catch {
+              try { localStorage.setItem("pathfinity.roadmapDraft", json); } catch {}
+            }
+            onOpen(json);
+          }}
+        >
+          Open in Viewer
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function Conversation({ messages, status, className }: Props) {
+  const router = useRouter();
   const { speak, stop } = useTTS();
 
   // Find the latest assistant message and its concatenated text
@@ -82,70 +131,17 @@ export function Conversation({ messages, status, className }: Props) {
     const id = String(lastAssistant.id ?? "");
     const len = lastAssistantText.length;
     if (!len) return;
-    // Only trigger when not streaming
     if (status === "streaming") return;
-    // Avoid repeating the same content
     if (spokenRef.current.id === id && spokenRef.current.len === len) return;
-
     speak(lastAssistantText);
     spokenRef.current = { id, len };
   }, [lastAssistant, lastAssistantText, status, speak]);
 
-  // Stop speech on unmount
   useEffect(() => {
     return () => {
       try { stop(); } catch {}
     };
   }, [stop]);
-// Lazy JSON extractor component to avoid blocking main render when messages are large.
-function PathwayJsonActions({ text, messageRole, onOpen }: { text: string; messageRole: string; onOpen: (json: string) => void }) {
-  const [json, setJson] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (messageRole !== 'assistant') return;
-    // Defer heavy parsing until browser is idle or after a short timeout.
-    const run = () => {
-      try {
-        const extracted = extractPathwayJsonFromText(text);
-        setJson(extracted);
-      } catch (e) {
-        // swallow parsing errors
-      }
-    };
-    if (typeof (window as any).requestIdleCallback === 'function') {
-      (window as any).requestIdleCallback(run, { timeout: 500 });
-    } else {
-      const t = setTimeout(run, 50);
-      return () => clearTimeout(t);
-    }
-  }, [text, messageRole]);
-
-  if (!json) return null;
-  return (
-    <div className="mt-2">
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            try {
-              sessionStorage.setItem("pathfinity.roadmapDraft", json);
-            } catch {
-              try { localStorage.setItem("pathfinity.roadmapDraft", json); } catch {}
-            }
-            onOpen(json);
-          }}
-        >
-          Open in Viewer
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-export function Conversation({ messages, status, className }: Props) {
-  const router = useRouter();
   return (
     <AiConversation className={className}>
       <ConversationContent>
@@ -158,29 +154,25 @@ export function Conversation({ messages, status, className }: Props) {
         ) : (
           messages.map((message) => (
             <div key={message.id}>
-              {message.parts.map((part: any, i: number) => {
-                switch (part.type) {
-                  case "text": {
-                    const text: string = part.text ?? "";
-                    return (
-                      <Fragment key={`${message.id}-${i}`}>
-                        <Message from={message.role}>
-                          <MessageContent>
-                            <Response>{text}</Response>
-                            <PathwayJsonActions
-                              text={text}
-                              messageRole={message.role}
-                              onOpen={() => router.push("/SavedRoadmaps")}
-                            />
-                          </MessageContent>
-                        </Message>
-                      </Fragment>
-                    );
-                  }
-                  default:
-                    return null;
+              {message.parts.map((part, i: number) => {
+                if (isTextPart(part)) {
+                  const text: string = part.text ?? "";
+                  return (
+                    <Fragment key={`${message.id}-${i}`}>
+                      <Message from={asRole(message.role)}>
+                        <MessageContent>
+                          <Response>{text}</Response>
+                          <PathwayJsonActions
+                            text={text}
+                            messageRole={String(message.role)}
+                            onOpen={() => router.push("/SavedRoadmaps")}
+                          />
+                        </MessageContent>
+                      </Message>
+                    </Fragment>
+                  );
                 }
-                return null
+                return null;
               })}
               {message.role === "assistant" ? (
                 <div className="-mt-2 mb-2 flex justify-start px-2 text-xs text-muted-foreground">

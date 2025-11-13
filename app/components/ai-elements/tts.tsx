@@ -39,7 +39,9 @@ export function useTTS() {
   const [speaking, setSpeaking] = useState(false);
   const [enabled, setEnabledState] = useState(() => {
     try {
-      return localStorage.getItem("pf_tts_enabled") === "1";
+      const stored = localStorage.getItem("pf_tts_enabled");
+      // Default to disabled (muted) if never set
+      return stored === "1";
     } catch {
       return false;
     }
