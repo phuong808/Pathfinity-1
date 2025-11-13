@@ -670,7 +670,7 @@ export default function SampleConversation() {
       <Card className="bg-transparent backdrop-blur-none border-0 shadow-none">
         <div
           ref={chatContainerRef}
-          className="h-[500px] overflow-y-scroll space-y-4 p-6 scrollbar-hide"
+          className="h-[500px] overflow-y-auto space-y-4 p-6 scrollbar-hide"
         >
           {visibleMessages.map((message) => (
             <ChatMessageComponent key={message.id} message={message} />
