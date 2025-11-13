@@ -3,10 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "../Roadmap/roadmap.module.css";
 import { CAMPUSES } from "@/lib/course-mapper";
-import { pathwayToTimeline } from "../Roadmap/utils";
-import { TimelineItem, PathwayData } from "../Roadmap/types";
-import { TimelineView } from "../Roadmap/components/TimelineView";
-import { DetailsPanel } from "../Roadmap/components/DetailsPanel";
+import { pathwayToTimeline } from "../Catalog/utils";
+import { TimelineItem, PathwayData } from "../Catalog/types";
+import { TimelineView } from "../Catalog/components/TimelineView";
+import { DetailsPanel } from "../Catalog/components/DetailsPanel";
 import { normalizePathwayData } from "@/lib/pathway-json";
 
 export default function SavedRoadmapsPage() {

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Infinity, MessagesSquare, Map, GraduationCap, Briefcase, User, UserRoundPlus } from "lucide-react"
+import { Infinity, MessagesSquare, Map, GraduationCap, User, BookOpen } from "lucide-react"
 import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { NavMain } from "./nav-main"
@@ -32,9 +32,9 @@ const data = {
             icon: MessagesSquare,
         },
         {
-            title: "Roadmap",
-            url: "/Roadmap",
-            icon: Map,
+            title: "Catalog",
+            url: "/Catalog",
+            icon: BookOpen,
         },
     {
       title: "Roadmap Viewer",

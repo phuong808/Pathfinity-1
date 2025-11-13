@@ -2,7 +2,7 @@
  * Shared helpers for extracting and validating PathwayData JSON
  * from assistant text and normalizing stored/pasted objects.
  */
-import type { PathwayData } from '@/app/(with-sidebar)/Roadmap/types';
+import type { PathwayData } from '@/app/(with-sidebar)/Catalog/types';
 
 /**
  * Basic validation: ensure object resembles PathwayData.
