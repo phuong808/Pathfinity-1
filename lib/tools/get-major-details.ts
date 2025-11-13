@@ -5,6 +5,20 @@ import { major as m, campus as cam, degree as d, majorDegree as md } from '@/app
 import { sql, eq } from 'drizzle-orm';
 import { normalizeHawaiian } from '@/lib/normalize-hawaiian';
 
+// Lightweight table existence check to handle environments where migrations haven't run.
+async function ensureMajorsTable(): Promise<boolean> {
+    try {
+        // Query pg_catalog to see if the majors table exists
+        const rows = await db.execute(sql`SELECT to_regclass('public.majors') AS reg`);
+        const first: any = Array.isArray(rows) ? rows[0] : (rows as any).rows?.[0];
+        if (!first) return false;
+        const value = first.reg ?? first.to_regclass; // fallback variations
+        return value !== null;
+    } catch {
+        return false;
+    }
+}
+
 export const getMajorDetails = tool({
     description: "Get full details about a major: degrees offered, credits, duration. Use ONLY when user wants deep details about ONE major.",
     inputSchema: z.object({
@@ -12,6 +26,14 @@ export const getMajorDetails = tool({
         campus: z.string().optional().describe("Campus name if known"),
     }),
     execute: async ({ majorName, campus }) => {
+        // Guard: verify majors table exists to avoid confusing "relation does not exist" errors.
+        const hasMajors = await ensureMajorsTable();
+        if (!hasMajors) {
+            return {
+                found: false,
+                message: 'Major details are not available yet in this environment. You can still ask me to draft a basic roadmap based on general knowledge.',
+            };
+        }
         try {
             const conditions = [sql`${m.title} ILIKE ${`%${majorName}%`}`];
             if (campus) {
@@ -39,7 +61,10 @@ export const getMajorDetails = tool({
                 .limit(10);
 
             if (!result?.length) {
-                return `Couldn't find "${majorName}". Try getMajor first to see available majors?`;
+                return {
+                    found: false,
+                    message: `Couldn't find "${majorName}". Try listing majors first, or I can still draft a general roadmap if you'd like.`,
+                };
             }
 
             const major = result[0];
@@ -61,10 +86,25 @@ export const getMajorDetails = tool({
                 lines.push('No degree information available.');
             }
 
-            return lines.filter(Boolean).join('\n');
-        } catch (error) {
+            return {
+                found: true,
+                formatted: lines.filter(Boolean).join('\n'),
+            };
+        } catch (error: any) {
+            // If the error still leaks a missing relation, surface a clearer message.
+            const msg = String(error?.message || '');
+            if (/relation.*majors.*does not exist/i.test(msg)) {
+                return {
+                    found: false,
+                    message: 'Major details are unavailable right now (database not migrated). I can still provide a general overview or create a basic roadmap.'
+                };
+            }
             console.error('getMajorDetails error:', error);
-            return 'Having trouble getting major details. Try again?';
+            return {
+                found: false,
+                error: true,
+                message: 'I\'m having trouble getting major details right now. Please try again later.'
+            };
         }
     }
 });

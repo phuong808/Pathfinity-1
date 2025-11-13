@@ -5,6 +5,16 @@ import { major as m, campus as cam } from '@/app/db/schema';
 import { sql, eq } from 'drizzle-orm';
 import { normalizeHawaiian } from '@/lib/normalize-hawaiian';
 
+async function tablesReady(): Promise<boolean> {
+    try {
+        const res = await db.execute(sql`SELECT to_regclass('public.majors') AS majors, to_regclass('public.campuses') AS campuses`);
+        const first: any = Array.isArray(res) ? res[0] : (res as any).rows?.[0];
+        return !!(first?.majors && first?.campuses);
+    } catch {
+        return false;
+    }
+}
+
 export const getMajor = tool({
     description: "Search for majors by keyword or list all majors at a campus. Use when asked about majors, programs, or degrees of study.",
     inputSchema: z.object({
@@ -14,6 +24,15 @@ export const getMajor = tool({
     }),
     execute: async ({ query, campus, limit = 30 }) => {
         try {
+            // Gracefully handle environments where tables haven't been created yet
+            const ready = await tablesReady();
+            if (!ready) {
+                return {    
+                    found: false,
+                    message: 'Majors data is not available yet in this environment. Try asking about courses or campuses, or come back after data is loaded.',
+                };
+            }
+
             const conditions = [];
             if (query?.trim()) {
                 conditions.push(sql`${m.title} ILIKE ${`%${query}%`}`);
