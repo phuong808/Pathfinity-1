@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import styles from "../Roadmap/roadmap.module.css";
+import styles from "../Catalog/roadmap.module.css";
 import { CAMPUSES } from "@/lib/course-mapper";
 import { pathwayToTimeline } from "../Catalog/utils";
 import { TimelineItem, PathwayData } from "../Catalog/types";
