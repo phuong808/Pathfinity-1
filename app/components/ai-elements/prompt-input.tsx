@@ -304,6 +304,7 @@ export function PromptInputAttachment({
           <div className="relative size-5 shrink-0">
             <div className="absolute inset-0 flex size-5 items-center justify-center overflow-hidden rounded bg-background transition-opacity group-hover:opacity-0">
               {isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   alt={filename || "attachment"}
                   className="size-5 object-cover"
@@ -339,6 +340,7 @@ export function PromptInputAttachment({
         <div className="w-auto space-y-3">
           {isImage && (
             <div className="flex max-h-96 w-96 items-center justify-center overflow-hidden rounded-md border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt={filename || "attachment preview"}
                 className="max-h-full max-w-full object-contain"
@@ -543,36 +545,52 @@ export const PromptInput = ({
     [matchesAccept, maxFiles, maxFileSize, onError]
   );
 
-  const add = usingProvider
-    ? (files: File[] | FileList) => controller.attachments.add(files)
-    : addLocal;
+  const add = useMemo<((files: File[] | FileList) => void)>(
+    () => (usingProvider
+      ? (files: File[] | FileList) => controller.attachments.add(files)
+      : addLocal
+    ),
+    [usingProvider, controller, addLocal]
+  );
 
-  const remove = usingProvider
-    ? (id: string) => controller.attachments.remove(id)
-    : (id: string) =>
-        setItems((prev) => {
-          const found = prev.find((file) => file.id === id);
-          if (found?.url) {
-            URL.revokeObjectURL(found.url);
-          }
-          return prev.filter((file) => file.id !== id);
-        });
-
-  const clear = usingProvider
-    ? () => controller.attachments.clear()
-    : () =>
-        setItems((prev) => {
-          for (const file of prev) {
-            if (file.url) {
-              URL.revokeObjectURL(file.url);
+  const remove = useMemo<((id: string) => void)>(
+    () => (usingProvider
+      ? (id: string) => controller.attachments.remove(id)
+      : (id: string) =>
+          setItems((prev) => {
+            const found = prev.find((file) => file.id === id);
+            if (found?.url) {
+              URL.revokeObjectURL(found.url);
             }
-          }
-          return [];
-        });
+            return prev.filter((file) => file.id !== id);
+          })
+    ),
+    [usingProvider, controller]
+  );
 
-  const openFileDialog = usingProvider
-    ? () => controller.attachments.openFileDialog()
-    : openFileDialogLocal;
+  const clear = useMemo<(() => void)>(
+    () => (usingProvider
+      ? () => controller.attachments.clear()
+      : () =>
+          setItems((prev) => {
+            for (const file of prev) {
+              if (file.url) {
+                URL.revokeObjectURL(file.url);
+              }
+            }
+            return [];
+          })
+    ),
+    [usingProvider, controller]
+  );
+
+  const openFileDialog = useMemo<(() => void)>(
+    () => (usingProvider
+      ? () => controller.attachments.openFileDialog()
+      : openFileDialogLocal
+    ),
+    [usingProvider, controller, openFileDialogLocal]
+  );
 
   // Let provider know about our hidden file input so external menus can call openFileDialog()
   useEffect(() => {
@@ -697,7 +715,7 @@ export const PromptInput = ({
 
     // Convert blob URLs to data URLs asynchronously
     Promise.all(
-      files.map(async ({ id, ...item }) => {
+      files.map(async (item) => {
         if (item.url && item.url.startsWith("blob:")) {
           return {
             ...item,
@@ -729,7 +747,7 @@ export const PromptInput = ({
             controller.textInput.clear();
           }
         }
-      } catch (error) {
+      } catch {
         // Don't clear on error - user may want to retry
       }
     });
@@ -761,7 +779,7 @@ export const PromptInput = ({
 
   // Recording context provider: lift recording state so textarea can render waveform
   const [recIsRecording, _setRecIsRecording] = useState<boolean>(false);
-  const [recLevel, _setRecLevel] = useState<number>(0);
+  const [recLevel] = useState<number>(0);
   const [recLevels, _setRecLevels] = useState<number[]>([]);
   const [recElapsedMs, _setRecElapsedMs] = useState<number>(0);
   const [recSpectrum, _setRecSpectrum] = useState<number[]>([]);
@@ -831,7 +849,7 @@ export const PromptInputTextarea = ({
   const [isComposing, setIsComposing] = useState(false);
   const recordingCtx = useContext(RecordingContext);
   // levels are still available, but we now render spectrum; keep memo to avoid re-alloc
-  const levels = useMemo(() => recordingCtx?.levels ?? [], [recordingCtx?.levels]);
+  // const levels = useMemo(() => recordingCtx?.levels ?? [], [recordingCtx?.levels]);
   const spectrum = useMemo(() => recordingCtx?.spectrum ?? [], [recordingCtx?.spectrum]);
   const recElapsed = recordingCtx?.elapsedMs ?? 0;
 
@@ -1229,13 +1247,13 @@ interface SpeechRecognition extends EventTarget {
   lang: string;
   start(): void;
   stop(): void;
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
   onresult:
-    | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any)
+    | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void)
     | null;
   onerror:
-    | ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any)
+    | ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void)
     | null;
 }
 
@@ -1299,7 +1317,9 @@ export const PromptInputSpeechButton = ({
   const silenceStartRef = useRef<number | null>(null);
   // visual/audio indicators
   // Keep internal level/elapsed for backwards compatibility; not used by UI directly
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [level, setLevel] = useState<number>(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [elapsedMs, setElapsedMs] = useState<number>(0); // kept for internal timing
   const startTimeRef = useRef<number | null>(null);
 

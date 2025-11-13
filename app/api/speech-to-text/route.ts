@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     // Convert the file (web File/Blob) to a stream-friendly object for forwarding
     // Use a FormData and forward to OpenAI's transcription endpoint.
     const forward = new FormData();
-    forward.append('file', file as any, 'audio.webm');
+    forward.append('file', file, 'audio.webm');
     // use whisper-1 or the preferred model; fallback to whisper-1
     forward.append('model', 'whisper-1');
 
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${OPENAI_KEY}`,
-      } as any,
-      body: forward as any,
+      },
+      body: forward,
     });
 
     if (!res.ok) {
