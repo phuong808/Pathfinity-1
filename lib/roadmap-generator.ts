@@ -1,282 +1,266 @@
 'use server';
 
 import { db } from '@/app/db';
-import { profile, course, campus, major, degree, majorDegree } from '@/app/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { profile, campus } from '@/app/db/schema';
+import { eq } from 'drizzle-orm';
 import { openai } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { z } from 'zod';
+import { generateText } from 'ai';
+import fs from 'fs';
+import path from 'path';
 
-// Define the schema for the roadmap structure (matching manoa_degree_pathways.json)
-const CourseSchema = z.object({
-  name: z.string().describe('Course code and number (e.g., "CINE 255", "FQ", "Gen Ed", "Elective")'),
-  credits: z.number().describe('Number of credits for this course'),
-});
+// Define pathway template type
+interface PathwayTemplate {
+  program_name: string;
+  institution: string;
+  total_credits: number;
+  years: Array<{
+    year_number: number;
+    semesters: Array<{
+      semester_name: 'fall_semester' | 'spring_semester' | 'summer_semester';
+      credits: number;
+      courses: Array<{
+        name: string;
+        credits: number;
+      }>;
+    }>;
+  }>;
+}
 
-const SemesterSchema = z.object({
-  semester_name: z.enum(['fall_semester', 'spring_semester', 'summer_semester']),
-  credits: z.number().describe('Total credits for this semester'),
-  courses: z.array(CourseSchema),
-});
-
-const YearSchema = z.object({
-  year_number: z.number().describe('Year number (1-4 for bachelor\'s, 1-2 for associate)'),
-  semesters: z.array(SemesterSchema),
-});
-
-const RoadmapSchema = z.object({
-  program_name: z.string().describe('Full program name including degree type'),
-  institution: z.string().describe('Institution name'),
-  total_credits: z.number().describe('Total credits required for the degree'),
-  years: z.array(YearSchema),
-});
-
-type Roadmap = z.infer<typeof RoadmapSchema>;
-
-/**
- * Get all available courses for a campus
- */
-async function getCoursesForCampus(campusId: string): Promise<any[]> {
-  const courses = await db
-    .select({
-      coursePrefix: course.coursePrefix,
-      courseNumber: course.courseNumber,
-      courseTitle: course.courseTitle,
-      courseDesc: course.courseDesc,
-      numUnits: course.numUnits,
-      deptName: course.deptName,
-    })
-    .from(course)
-    .where(eq(course.campusId, campusId));
-
-  return courses;
+// Define course from database
+interface CourseRecord {
+  coursePrefix: string;
+  courseNumber: string;
+  courseTitle: string;
+  numUnits: string;
 }
 
 /**
- * Get degree information for a major
+ * Load pathway templates from manoa_degree_pathways.json
  */
-async function getDegreeInfo(majorTitle: string, campusId: string, degreeCodeOrName: string) {
-  // Find the major
-  const majors = await db
-    .select()
-    .from(major)
-    .where(and(eq(major.campusId, campusId), eq(major.title, majorTitle)))
-    .limit(1);
+function loadPathwayTemplates(): PathwayTemplate[] {
+  const filePath = path.join(process.cwd(), 'app', 'db', 'data', 'manoa_degree_pathways.json');
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  return JSON.parse(fileContent);
+}
 
-  if (majors.length === 0) {
-    throw new Error(`Major "${majorTitle}" not found at campus "${campusId}"`);
+/**
+ * Load all UH Manoa courses from manoa_courses.json
+ */
+function loadManoaCourses(): CourseRecord[] {
+  const filePath = path.join(process.cwd(), 'app', 'db', 'data', 'manoa_courses.json');
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const courses = JSON.parse(fileContent);
+  
+  return courses.map((c: any) => ({
+    coursePrefix: c.course_prefix,
+    courseNumber: c.course_number,
+    courseTitle: c.course_title,
+    numUnits: c.num_units,
+  }));
+}
+
+/**
+ * Find matching pathway template for a major and degree
+ */
+function findMatchingPathway(
+  major: string,
+  degree: string,
+  templates: PathwayTemplate[]
+): PathwayTemplate | null {
+  const normalizedMajor = major.toLowerCase().trim();
+  const normalizedDegree = degree.toUpperCase().trim();
+  
+  // Try exact match first
+  for (const template of templates) {
+    const programName = template.program_name.toLowerCase();
+    if (programName.includes(normalizedMajor) && programName.includes(normalizedDegree.toLowerCase())) {
+      return template;
+    }
   }
-
-  const targetMajor = majors[0];
-
-  // Find the degree - search by either code or name
-  const degrees = await db
-    .select({
-      id: degree.id,
-      code: degree.code,
-      name: degree.name,
-      level: degree.level,
-      requiredCredits: majorDegree.requiredCredits,
-      typicalDuration: majorDegree.typicalDuration,
-    })
-    .from(degree)
-    .innerJoin(majorDegree, eq(degree.id, majorDegree.degreeId))
-    .where(and(
-      eq(majorDegree.majorId, targetMajor.id),
-      sql`(${degree.code} = ${degreeCodeOrName} OR ${degree.name} = ${degreeCodeOrName})`
-    ))
-    .limit(1);
-
-  if (degrees.length === 0) {
-    // Get all available degrees for this major to show in error
-    const availableDegrees = await db
-      .select({
-        code: degree.code,
-        name: degree.name,
-      })
-      .from(degree)
-      .innerJoin(majorDegree, eq(degree.id, majorDegree.degreeId))
-      .where(eq(majorDegree.majorId, targetMajor.id));
-
-    const availableList = availableDegrees
-      .map(d => `${d.code} (${d.name})`)
-      .join(', ');
-
-    throw new Error(
-      `Degree "${degreeCodeOrName}" not found for major "${majorTitle}". ` +
-      `Available degrees: ${availableList}`
-    );
+  
+  // Try partial match - just major name
+  for (const template of templates) {
+    const programName = template.program_name.toLowerCase();
+    if (programName.includes(normalizedMajor)) {
+      return template;
+    }
   }
+  
+  return null;
+}
 
-  return degrees[0];
+/**
+ * Extract major department prefix from pathway
+ */
+function extractMajorPrefix(pathwayTemplate: PathwayTemplate): string {
+  // Look for most common course prefix in the pathway
+  const prefixCounts = new Map<string, number>();
+  
+  pathwayTemplate.years.forEach(year => {
+    year.semesters.forEach(semester => {
+      semester.courses.forEach(course => {
+        const match = course.name.match(/^([A-Z]+)/);
+        if (match) {
+          const prefix = match[1];
+          // Skip gen-ed codes
+          if (!['FW', 'FQ', 'FG', 'DS', 'DA', 'DH', 'DL', 'DB', 'DP', 'DY', 'HSL'].includes(prefix)) {
+            prefixCounts.set(prefix, (prefixCounts.get(prefix) || 0) + 1);
+          }
+        }
+      });
+    });
+  });
+  
+  // Return most common prefix
+  let maxCount = 0;
+  let majorPrefix = '';
+  prefixCounts.forEach((count, prefix) => {
+    if (count > maxCount) {
+      maxCount = count;
+      majorPrefix = prefix;
+    }
+  });
+  
+  return majorPrefix;
+}
+
+/**
+ * Get relevant courses for elective replacement
+ */
+function getRelevantCourses(
+  allCourses: CourseRecord[],
+  majorPrefix: string
+): { byLevel: Map<string, CourseRecord[]>, all: CourseRecord[] } {
+  // Filter to major courses
+  const majorCourses = allCourses.filter(c => c.coursePrefix === majorPrefix);
+  
+  // Organize by level
+  const byLevel = new Map<string, CourseRecord[]>();
+  byLevel.set('100-200', []);
+  byLevel.set('300', []);
+  byLevel.set('400+', []);
+  
+  majorCourses.forEach(course => {
+    const num = parseInt(course.courseNumber);
+    if (!isNaN(num)) {
+      if (num < 300) {
+        byLevel.get('100-200')!.push(course);
+      } else if (num < 400) {
+        byLevel.get('300')!.push(course);
+      } else {
+        byLevel.get('400+')!.push(course);
+      }
+    }
+  });
+  
+  return { byLevel, all: majorCourses };
+}
+
+/**
+ * Simple function to process pathway and replace electives using AI
+ */
+async function processPathwayWithAI(
+  pathwayTemplate: PathwayTemplate,
+  relevantCourses: { byLevel: Map<string, CourseRecord[]>, all: CourseRecord[] },
+  profileData: any,
+  majorPrefix: string
+): Promise<PathwayTemplate> {
+  // Create a simple course list organized by level
+  const level400 = relevantCourses.byLevel.get('400+')!.slice(0, 30);
+  const level300 = relevantCourses.byLevel.get('300')!.slice(0, 20);
+  
+  const courseList = `
+LEVEL 400+ COURSES (for "400+ Elective" replacements):
+${level400.map(c => `${c.coursePrefix} ${c.courseNumber}: ${c.courseTitle}`).join('\n')}
+
+LEVEL 300 COURSES (for "300+ Elective" replacements):
+${level300.map(c => `${c.coursePrefix} ${c.courseNumber}: ${c.courseTitle}`).join('\n')}
+`.trim();
+
+  const prompt = `You are processing a college degree pathway. Your job is SIMPLE and SPECIFIC:
+
+STUDENT INFO:
+- Major: ${profileData.major}
+- Career Goal: ${profileData.career || 'Not specified'}
+- Interests: ${profileData.interests?.join(', ') || 'Not specified'}
+
+AVAILABLE COURSES:
+${courseList}
+
+PATHWAY TEMPLATE (JSON):
+${JSON.stringify(pathwayTemplate, null, 2)}
+
+YOUR TASKS (do ONLY these 3 things):
+
+1. **REPLACE ELECTIVES**: Find any course name containing "Elective" and replace with actual courses from the list above.
+   - "${majorPrefix} 400+ Elective" → Choose a ${majorPrefix} course from LEVEL 400+ list
+   - "${majorPrefix} 300+ Elective" → Choose a ${majorPrefix} course from LEVEL 300 or 400+ list
+   - "Elective 300+" → Choose any 300+ course that fits career/interests
+   - Choose courses relevant to "${profileData.career}"
+   - NO DUPLICATES - each course only once
+
+2. **CHOOSE FROM OPTIONS**: When you see "or", "/", or "and", pick ONE option that makes sense.
+   - "MATH 215, 241 or 251A" → Pick ONE: MATH 215 OR MATH 241 OR MATH 251A
+   - "PHYS 151 or 170" → Pick ONE: PHYS 151 OR PHYS 170
+   - "ICS 312/331" → Pick ONE: ICS 312 OR ICS 331
+   - Choose options that sequence well (e.g., if you pick MATH 241, pick MATH 242 later)
+
+3. **KEEP UNCHANGED**:
+   - All Gen Ed codes: FW, FQ, FG (A/B/C), DS, DA, DH, DL, DB, DP, DY, DA/DH/DL, HSL
+   - Specific courses that are already clear: ICS 111, MATH 241, CHEM 161, etc.
+
+Return the COMPLETE modified pathway as valid JSON. Keep ALL years, ALL semesters, ALL courses. Only modify what needs changing.`;
+
+  console.log('Processing pathway with AI to replace electives and choose options...');
+  
+  try {
+    const { text } = await generateText({
+      model: openai('gpt-4o-mini'),
+      prompt,
+      temperature: 0.2,
+    });
+    
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON found in AI response');
+    }
+    
+    const processedPathway = JSON.parse(jsonMatch[0]);
+    console.log('✓ Pathway processed successfully');
+    
+    return processedPathway;
+  } catch (error) {
+    console.error('Error processing pathway with AI:', error);
+    throw error;
+  }
 }
 
 /**
  * Get campus information
  */
 async function getCampusInfo(campusNameOrId: string) {
-  const campuses = await db
+  let campuses = await db
     .select()
     .from(campus)
-    .where(
-      sql`${campus.id} = ${campusNameOrId} OR LOWER(${campus.name}) LIKE ${`%${campusNameOrId.toLowerCase()}%`}`
-    )
+    .where(eq(campus.id, campusNameOrId))
     .limit(1);
+
+  if (campuses.length === 0) {
+    const allCampuses = await db.select().from(campus);
+    campuses = allCampuses.filter(c => {
+      const nameMatch = c.name.toLowerCase() === campusNameOrId.toLowerCase();
+      const aliases = Array.isArray(c.aliases) ? c.aliases : [];
+      const aliasMatch = aliases.some((alias: string) => alias.toLowerCase() === campusNameOrId.toLowerCase());
+      return nameMatch || aliasMatch;
+    });
+  }
 
   if (campuses.length === 0) {
     throw new Error(`Campus "${campusNameOrId}" not found`);
   }
 
   return campuses[0];
-}
-
-/**
- * Generate roadmap using OpenAI with structured output
- * Exported for testing purposes
- */
-export async function generateRoadmapWithAI(
-  profileData: any,
-  campusInfo: any,
-  degreeInfo: any,
-  availableCourses: any[]
-): Promise<Roadmap> {
-  // Prepare course catalog as a structured string (limit size for context)
-  const courseCatalog = availableCourses
-    .slice(0, 500) // Limit to first 500 courses to avoid token limits
-    .map(c => `${c.coursePrefix} ${c.courseNumber}: ${c.courseTitle} (${c.numUnits} credits) - ${c.courseDesc?.substring(0, 100)}`)
-    .join('\n');
-
-  const totalCoursesCount = availableCourses.length;
-
-  // Determine degree structure based on level
-  const degreeLevel = degreeInfo.level || 'baccalaureate';
-  let expectedYears = 4;
-  let expectedCredits = degreeInfo.requiredCredits || 120;
-  
-  if (degreeLevel.includes('certificate')) {
-    expectedYears = 1;
-    expectedCredits = degreeInfo.requiredCredits || 15;
-  } else if (degreeLevel === 'associate') {
-    expectedYears = 2;
-    expectedCredits = degreeInfo.requiredCredits || 60;
-  } else if (degreeLevel === 'baccalaureate') {
-    expectedYears = 4;
-    expectedCredits = degreeInfo.requiredCredits || 120;
-  } else if (degreeLevel === 'graduate') {
-    expectedYears = 2;
-    expectedCredits = degreeInfo.requiredCredits || 30;
-  } else if (degreeLevel === 'professional_doctorate' || degreeLevel === 'doctorate') {
-    expectedYears = 4;
-    expectedCredits = degreeInfo.requiredCredits || 60;
-  }
-
-  // Build comprehensive prompt
-  const prompt = `You are an expert academic advisor creating a personalized college course roadmap.
-
-STUDENT PROFILE:
-- Career Goal: ${profileData.career}
-- Major: ${profileData.major}
-- Degree: ${degreeInfo.name} (${degreeInfo.code})
-- Interests: ${profileData.interests?.join(', ') || 'Not specified'}
-- Skills: ${profileData.skills?.join(', ') || 'Not specified'}
-
-INSTITUTION: ${campusInfo.name}
-
-DEGREE REQUIREMENTS:
-- Required Credits: ${expectedCredits}
-- Degree Level: ${degreeLevel}
-- Typical Duration: ${degreeInfo.typicalDuration ? `${degreeInfo.typicalDuration} months` : `${expectedYears * 12} months`}
-- Expected Years: ${expectedYears}
-
-AVAILABLE COURSES (showing ${Math.min(500, totalCoursesCount)} of ${totalCoursesCount} courses):
-${courseCatalog}
-
-CRITICAL REQUIREMENTS:
-1. ONLY use courses from the provided course catalog above for major-specific courses
-2. Course names MUST match EXACTLY as shown (e.g., "ICS 111", "MATH 241")
-3. The roadmap MUST include ALL ${expectedYears} year(s) for this ${degreeLevel} degree
-4. The roadmap MUST fulfill the required credits (${expectedCredits} credits total)
-5. You may SLIGHTLY exceed the required credits if necessary to complete the degree properly
-6. Include courses directly relevant to the major "${profileData.major}"
-7. Prioritize courses that align with the career goal: "${profileData.career}"
-8. Include courses that develop the student's interests: ${profileData.interests?.join(', ')}
-9. Include courses that build upon their skills: ${profileData.skills?.join(', ')}
-
-FOR GENERAL EDUCATION & ELECTIVES:
-- Use placeholders like: "Gen Ed", "Elective", "Upper Division Elective"
-- These do not need to be from the course catalog
-
-ROADMAP STRUCTURE:
-${degreeLevel === 'certificate' || degreeLevel.includes('certificate') ? `
-- **Certificate programs: 1 year (2-3 semesters)**
-- Focus on core practical skills for immediate employment
-- Typically 15-30 credits total
-- Most courses should be major-specific
-` : degreeLevel === 'associate' ? `
-- **Associate degree: 2 years (4 semesters + summers)**
-- Balance of general education and major courses
-- Typically 60 credits total
-- Year 1: Foundation courses and general education
-- Year 2: More specialized major courses
-` : degreeLevel === 'baccalaureate' ? `
-- **Bachelor's degree: 4 years (8 semesters + summers)**
-- Each year has 3 semesters: fall_semester, spring_semester, summer_semester
-- Distribute credits evenly (typically 15 credits per fall/spring semester)
-- Summer semesters can be 0-6 credits
-- Total should be ${expectedCredits}+ credits
-- Year 1: Foundational courses (100-200 level), general education
-- Year 2: Core major requirements (200-300 level)
-- Year 3: Advanced major courses (300-400 level)
-- Year 4: Capstone/senior courses (400+ level)
-` : degreeLevel === 'graduate' ? `
-- **Master's degree: 2 years (4 semesters)**
-- Focus on advanced coursework and research
-- Typically 30-36 credits total
-- All courses should be graduate level (600+ level)
-- Include thesis/capstone in final semesters
-- Year 1: Core graduate courses
-- Year 2: Specialized electives and thesis/capstone
-` : `
-- **Doctoral degree: 3-5 years**
-- Mix of advanced coursework and research
-- Typically 60+ credits including dissertation
-- All courses should be graduate level (600-700+ level)
-- Include dissertation research credits
-- Early years: Advanced coursework and comprehensive exams
-- Later years: Dissertation research and writing
-`}
-
-VERIFICATION CHECKLIST:
-- [ ] Roadmap has exactly ${expectedYears} year(s)
-- [ ] Total credits across all years = ${expectedCredits}+ credits
-- [ ] All major-specific courses exist in the provided catalog
-- [ ] Prerequisite sequences are logical
-- [ ] Career skills (${profileData.skills?.join(', ')}) are addressed
-- [ ] Student interests (${profileData.interests?.join(', ')}) are incorporated
-
-Generate a complete, realistic, and personalized ${expectedYears}-year academic roadmap for this ${degreeLevel} degree.`;
-
-  console.log('Generating roadmap with AI...');
-  console.log(`Available courses: ${totalCoursesCount}`);
-  console.log(`Required credits: ${degreeInfo.requiredCredits || 120}`);
-
-  try {
-    const { object } = await generateObject({
-      model: openai('gpt-4o-mini'),
-      schema: RoadmapSchema,
-      mode: 'json',
-      prompt,
-      temperature: 0.7,
-    });
-
-    console.log('Roadmap generated successfully');
-    console.log(`Total credits in roadmap: ${object.total_credits}`);
-    
-    return object;
-  } catch (error) {
-    console.error('Error generating roadmap with AI:', error);
-    throw new Error(`Failed to generate roadmap: ${error}`);
-  }
 }
 
 /**
@@ -305,52 +289,100 @@ export async function generateAndSaveRoadmap(profileId: number): Promise<void> {
       degree: profileData.degree,
     });
 
-    // Validate required fields
     if (!profileData.college || !profileData.major || !profileData.degree) {
       throw new Error('Profile is missing required fields: college, major, or degree');
     }
 
-    // 2. Get campus info
+    // 2. Check if campus is UH Manoa
     const campusInfo = await getCampusInfo(profileData.college);
     console.log(`Campus found: ${campusInfo.name} (${campusInfo.id})`);
 
-    // 3. Get degree info
-    const degreeInfo = await getDegreeInfo(
-      profileData.major,
-      campusInfo.id,
-      profileData.degree
-    );
-    console.log(`Degree info: ${degreeInfo.name} (${degreeInfo.code}), ${degreeInfo.requiredCredits} credits`);
-
-    // 4. Get available courses
-    const courses = await getCoursesForCampus(campusInfo.id);
-    console.log(`Found ${courses.length} courses for campus`);
-
-    if (courses.length === 0) {
-      throw new Error(`No courses found for campus ${campusInfo.id}`);
+    if (campusInfo.id !== 'uh_manoa') {
+      console.log(`Campus ${campusInfo.id} is not UH Manoa. Storing empty roadmap.`);
+      
+      await db
+        .update(profile)
+        .set({
+          roadmap: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(profile.id, profileId));
+      
+      console.log(`✓ Empty roadmap saved for non-UH Manoa profile ${profileId}`);
+      console.log('=== Roadmap generation completed ===\n');
+      return;
     }
 
-    // 5. Generate roadmap with AI
-    const roadmap = await generateRoadmapWithAI(
-      profileData,
-      campusInfo,
-      degreeInfo,
-      courses
+    // 3. Load pathway templates
+    console.log('Loading pathway templates...');
+    const pathwayTemplates = loadPathwayTemplates();
+    console.log(`Loaded ${pathwayTemplates.length} pathway templates`);
+
+    // 4. Find matching pathway
+    const matchingPathway = findMatchingPathway(
+      profileData.major,
+      profileData.degree,
+      pathwayTemplates
     );
 
-    // 6. Save roadmap to profile
+    if (!matchingPathway) {
+      console.log(`No pathway template found for ${profileData.major} (${profileData.degree})`);
+      
+      await db
+        .update(profile)
+        .set({
+          roadmap: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(profile.id, profileId));
+      
+      console.log(`✓ Empty roadmap saved (no template found) for profile ${profileId}`);
+      console.log('=== Roadmap generation completed ===\n');
+      return;
+    }
+
+    console.log(`Found matching pathway: ${matchingPathway.program_name}`);
+
+    // 5. Load courses and extract major prefix
+    console.log('Loading UH Manoa courses...');
+    const allCourses = loadManoaCourses();
+    console.log(`Loaded ${allCourses.length} UH Manoa courses`);
+
+    const majorPrefix = extractMajorPrefix(matchingPathway);
+    console.log(`Detected major prefix: ${majorPrefix}`);
+
+    const relevantCourses = getRelevantCourses(allCourses, majorPrefix);
+    console.log(`Found ${relevantCourses.all.length} ${majorPrefix} courses`);
+
+    // 6. Process pathway with AI (simple replacement)
+    const processedRoadmap = await processPathwayWithAI(
+      matchingPathway,
+      relevantCourses,
+      profileData,
+      majorPrefix
+    );
+
+    // Add profile information
+    const finalRoadmap = {
+      ...processedRoadmap,
+      career_goal: profileData.career || undefined,
+      interests: profileData.interests as string[] || undefined,
+      skills: profileData.skills as string[] || undefined,
+    };
+
+    // 7. Save roadmap to profile
     await db
       .update(profile)
       .set({
-        roadmap: roadmap as any,
+        roadmap: finalRoadmap as any,
         updatedAt: new Date(),
       })
       .where(eq(profile.id, profileId));
 
     console.log(`✓ Roadmap successfully saved to profile ${profileId}`);
-    console.log(`  Program: ${roadmap.program_name}`);
-    console.log(`  Total Credits: ${roadmap.total_credits}`);
-    console.log(`  Years: ${roadmap.years.length}`);
+    console.log(`  Program: ${processedRoadmap.program_name}`);
+    console.log(`  Total Credits: ${processedRoadmap.total_credits}`);
+    console.log(`  Years: ${processedRoadmap.years.length}`);
     console.log('=== Roadmap generation completed ===\n');
 
   } catch (error) {
@@ -377,22 +409,47 @@ export async function testRoadmapGeneration(profileId: number) {
       .where(eq(profile.id, profileId))
       .limit(1);
 
-    if (profiles.length > 0 && profiles[0].roadmap) {
-      const roadmap = profiles[0].roadmap as Roadmap;
+    if (profiles.length > 0) {
+      const savedProfile = profiles[0];
+      
+      if (!savedProfile.roadmap) {
+        console.log('\n' + '-'.repeat(60));
+        console.log('NO ROADMAP GENERATED:');
+        console.log('-'.repeat(60));
+        console.log(`Campus: ${savedProfile.college}`);
+        console.log('Reason: Either campus is not UH Manoa or no pathway template found');
+        console.log('\n' + '='.repeat(60));
+        console.log('✓ TEST COMPLETED (No roadmap for this profile)');
+        console.log('='.repeat(60) + '\n');
+        return;
+      }
+      
+      const roadmap = savedProfile.roadmap as any;
       console.log('\n' + '-'.repeat(60));
       console.log('GENERATED ROADMAP PREVIEW:');
       console.log('-'.repeat(60));
       console.log(`Program: ${roadmap.program_name}`);
       console.log(`Institution: ${roadmap.institution}`);
       console.log(`Total Credits: ${roadmap.total_credits}`);
+      
+      if (roadmap.career_goal) {
+        console.log(`Career Goal: ${roadmap.career_goal}`);
+      }
+      if (roadmap.interests && roadmap.interests.length > 0) {
+        console.log(`Interests: ${roadmap.interests.join(', ')}`);
+      }
+      if (roadmap.skills && roadmap.skills.length > 0) {
+        console.log(`Skills: ${roadmap.skills.join(', ')}`);
+      }
+      
       console.log(`\nYears: ${roadmap.years.length}`);
       
-      roadmap.years.forEach(year => {
+      roadmap.years.forEach((year: any) => {
         console.log(`\n  Year ${year.year_number}:`);
-        year.semesters.forEach(semester => {
+        year.semesters.forEach((semester: any) => {
           if (semester.courses.length > 0) {
             console.log(`    ${semester.semester_name}: ${semester.credits} credits`);
-            semester.courses.forEach(course => {
+            semester.courses.forEach((course: any) => {
               console.log(`      - ${course.name} (${course.credits} credits)`);
             });
           }

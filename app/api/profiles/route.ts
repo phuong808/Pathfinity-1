@@ -56,12 +56,33 @@ export async function POST(req: NextRequest) {
       })
       .returning()
 
-    // Generate roadmap in the background (non-blocking)
-    generateRoadmapForProfile(newProfile.id).catch((error) => {
-      console.error(`Background roadmap generation failed for profile ${newProfile.id}:`, error)
-    })
-
-    return NextResponse.json({ success: true, profile: newProfile }, { status: 201 })
+    // Generate roadmap synchronously to know if it succeeded
+    try {
+      await generateRoadmapForProfile(newProfile.id)
+      
+      // Fetch the profile again to check if roadmap was generated
+      const [updatedProfile] = await db
+        .select()
+        .from(profile)
+        .where(sql`${profile.id} = ${newProfile.id}`)
+        .limit(1)
+      
+      const hasRoadmap = updatedProfile?.roadmap !== null
+      
+      return NextResponse.json({ 
+        success: true, 
+        profile: updatedProfile || newProfile,
+        hasRoadmap 
+      }, { status: 201 })
+    } catch (roadmapError) {
+      console.error(`Roadmap generation failed for profile ${newProfile.id}:`, roadmapError)
+      return NextResponse.json({ 
+        success: true, 
+        profile: newProfile,
+        hasRoadmap: false,
+        roadmapError: "Failed to generate roadmap"
+      }, { status: 201 })
+    }
   } catch (error) {
     console.error("Error creating profile:", error)
     return NextResponse.json(
