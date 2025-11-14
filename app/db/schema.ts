@@ -102,6 +102,9 @@ export const embedding = pgTable("embeddings", {
 },
 (table) => [
   index("embedding_vector_idx").using("ivfflat", table.embedding.op("vector_cosine_ops")),
+  index("embedding_content_hash_idx").on(table.contentHash),
+  index("embedding_source_ref_idx").on(table.sourceId, table.refId),
+  index("embedding_course_idx").on(table.courseId),
 ]);
 
 
@@ -171,3 +174,16 @@ export const majorDegree = pgTable("major_degrees", {
   requiredCredits: integer("required_credits"),
   typicalDuration: integer("typical_duration"), // duration in months
 });
+
+// Pathways (degree roadmap JSON ingested from files like manoa_degree_pathways.json)
+export const pathway = pgTable("pathways", {
+  id: text("id").primaryKey(),
+  programName: text("program_name").notNull(),
+  institution: text("institution"),
+  totalCredits: text("total_credits"),
+  pathwayData: jsonb("pathway_data"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("pathway_program_idx").on(table.programName),
+]);
