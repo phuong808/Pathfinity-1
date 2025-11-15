@@ -45,14 +45,14 @@ export default function ProfileCarousel({ profiles }: ProfileCarouselProps) {
     }
 
     return (
-        <div className="w-full space-y-4">
+        <div className="w-full flex items-center justify-center min-h-[55vh]">
             <Carousel
                 setApi={setApi}
                 opts={{
                     align: "center",
                     loop: false,
                 }}
-                className="w-full max-w-6xl mx-auto px-12"
+                className="w-full max-w-7xl mx-auto px-16"
             >
                 <CarouselContent className="-ml-4">
                     {profiles.map((profile) => (
@@ -60,7 +60,7 @@ export default function ProfileCarousel({ profiles }: ProfileCarouselProps) {
                             key={profile.id}
                             className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
                         >
-                            <div className="h-[500px] w-full">
+                            <div className="w-full">
                                 <ProfileCard
                                     id={profile.id}
                                     career={profile.career}

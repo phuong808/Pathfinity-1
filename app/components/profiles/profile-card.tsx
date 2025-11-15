@@ -1,7 +1,10 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/app/components/ui/card"
-import { Badge } from "@/app/components/ui/badge"
 import { Button } from "@/app/components/ui/button"
-import { GraduationCap, Heart, Wrench } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
+import { Plus, Minus } from "lucide-react"
+import { useState } from "react"
 
 interface ProfileCardProps {
     id: number
@@ -22,102 +25,94 @@ export default function ProfileCard({
     interests,
     skills,
 }: ProfileCardProps) {
-    // Limit items shown in carousel card
-    const maxItemsToShow = 3
-    const displayInterests = interests.slice(0, maxItemsToShow)
-    const displaySkills = skills.slice(0, maxItemsToShow)
-    const hasMoreInterests = interests.length > maxItemsToShow
-    const hasMoreSkills = skills.length > maxItemsToShow
+    const [isOpen, setIsOpen] = useState(false)
 
     return (
-        <Card className="w-full h-full flex flex-col overflow-hidden">
-            <CardHeader className="py-2 px-4] flex-shrink-0">
+        <Card className="w-full flex flex-col overflow-hidden">
+            <CardHeader className="py-2 px-6 flex-shrink-0">
                 <CardTitle className="text-lg font-semibold text-gray-900">
                     {career}
                 </CardTitle>
             </CardHeader>
 
-            <CardContent className="flex-1 overflow-y-auto">
+            <CardContent className="flex-1">
                 <div className="space-y-3">
-                    {/* Education Section */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-gray-700">
-                            <GraduationCap className="h-4 w-4 text-green-600 flex-shrink-0" />
-                            <h3 className="text-sm font-semibold">Education</h3>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-gray-200">
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Education</h3>
                         </div>
-                        <div className="space-y-1 pl-6">
-                            <div>
-                                <p className="text-xs text-gray-500">Institution</p>
-                                <p className="text-sm text-gray-900 font-medium truncate">{college}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500">Program</p>
-                                <p className="text-sm text-gray-900 font-medium truncate">{major}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500">Degree</p>
-                                <p className="text-sm text-gray-900 font-medium truncate">{degree}</p>
-                            </div>
+
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Institution</p>
+                            <p className="text-sm text-gray-900 leading-tight">{college}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Program</p>
+                            <p className="text-sm text-gray-900 leading-tight">{major}</p>
+                        </div>
+                        <div>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Degree</p>
+                                <p className="text-sm text-gray-900 leading-tight">{degree}</p>
                         </div>
                     </div>
 
-                    {/* Interests Section */}
-                    {interests.length > 0 && (
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-2 text-gray-700">
-                                <Heart className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                <h3 className="text-sm font-semibold">Interests</h3>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 pl-6">
-                                {displayInterests.map((interest, idx) => (
-                                    <Badge
-                                        key={idx}
-                                        variant="secondary"
-                                        className="bg-green-100 text-green-800 hover:bg-green-200 px-2 py-0.5 text-xs h-fit"
+                        {/* Interests & Skills Popover Trigger as Text Row */}
+                        {(interests.length > 0 || skills.length > 0) && (
+                            <Popover open={isOpen} onOpenChange={setIsOpen}>
+                                <PopoverTrigger asChild>
+                                    <div
+                                        className="flex items-center cursor-pointer select-none justify-between gap-2 pb-1.5 border-gray-200"
+                                        tabIndex={0}
+                                        role="button"
+                                        aria-label="Show Interests and Skills"
+                                        onClick={() => setIsOpen(true)}
+                                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setIsOpen(true) }}
                                     >
-                                        {interest}
-                                    </Badge>
-                                ))}
-                                {hasMoreInterests && (
-                                    <Badge
-                                        variant="secondary"
-                                        className="bg-gray-100 text-gray-600 px-2 py-0.5 text-xs h-fit"
-                                    >
-                                        +{interests.length - maxItemsToShow} more
-                                    </Badge>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Interests & Skills</h3>
+                                        {isOpen ? (
+                                            <Minus className="ml-auto h-4 w-4 text-gray-700" />
+                                        ) : (
+                                            <Plus className="ml-auto h-4 w-4 text-gray-700" />
+                                        )}
+                                    </div>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-4" align="start">
+                                    <div className="space-y-4">
+                                        {/* Interests */}
+                                        {interests.length > 0 && (
+                                            <div className="space-y-2">
+                                                <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wide pb-1.5 border-b border-gray-200">
+                                                    Interests
+                                                </h4>
+                                                <div className="flex flex-col gap-1.5">
+                                                    {interests.map((interest, idx) => (
+                                                        <span key={idx} className="text-sm text-gray-900">
+                                                            {interest}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
 
-                    {/* Skills Section */}
-                    {skills.length > 0 && (
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-2 text-gray-700">
-                                <Wrench className="h-4 w-4 text-green-600 flex-shrink-0" />
-                                <h3 className="text-sm font-semibold">Skills</h3>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 pl-6">
-                                {displaySkills.map((skill, idx) => (
-                                    <Badge
-                                        key={idx}
-                                        variant="secondary"
-                                        className="bg-blue-100 text-blue-800 hover:bg-blue-200 px-2 py-0.5 text-xs h-fit"
-                                    >
-                                        {skill}
-                                    </Badge>
-                                ))}
-                                {hasMoreSkills && (
-                                    <Badge
-                                        variant="secondary"
-                                        className="bg-gray-100 text-gray-600 px-2 py-0.5 text-xs h-fit"
-                                    >
-                                        +{skills.length - maxItemsToShow} more
-                                    </Badge>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                                        {/* Skills */}
+                                        {skills.length > 0 && (
+                                            <div className="space-y-2">
+                                                <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wide pb-1.5 border-b border-gray-200">
+                                                    Skills
+                                                </h4>
+                                                <div className="flex flex-col gap-1.5">
+                                                    {skills.map((skill, idx) => (
+                                                        <span key={idx} className="text-sm text-gray-900">
+                                                            {skill}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        )}
                 </div>
             </CardContent>
 

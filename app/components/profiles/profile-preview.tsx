@@ -1,7 +1,6 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { Button } from "@/app/components/ui/button"
-import { GraduationCap, Heart, Wrench } from "lucide-react"
 
 interface ProfilePreviewProps {
     career: string
@@ -24,7 +23,7 @@ export default function ProfilePreview({
 }: ProfilePreviewProps) {
     return (
         <Card className="w-full h-full flex flex-col overflow-hidden">
-            <CardHeader className="border-b py-3 px-5 flex-shrink-0">
+            <CardHeader className="py-2 px-6 flex-shrink-0">
                 <CardTitle className="text-lg font-semibold text-gray-900">{career}</CardTitle>
                 <CardDescription className="text-sm text-gray-600 mt-1">
                     Preview your pathway before saving
@@ -32,113 +31,102 @@ export default function ProfilePreview({
             </CardHeader>
 
             <CardContent className="flex-1 overflow-y-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-1">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {/* Column 1: Education */}
-                    <div className="space-y-3 min-w-0 w-full lg:w-auto max-w-sm lg:max-w-none">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-2 text-gray-700 w-full">
-                                <div className="flex items-center gap-2">
-                                    <GraduationCap className="h-5 w-5 text-green-600 flex-shrink-0" />
-                                    <h3 className="text-base font-semibold">Education</h3>
-                                </div>
-                                {onEdit && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => onEdit(2)}
-                                        className="text-green-600 hover:text-green-700 hover:bg-green-50 h-7 px-2.5 text-xs flex-shrink-0"
-                                    >
-                                        Edit
-                                    </Button>
-                                )}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-gray-200">
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Education</h3>
+                            {onEdit && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onEdit(2)}
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 h-6 px-2 text-xs"
+                                >
+                                    Edit
+                                </Button>
+                            )}
+                        </div>
+
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Institution</p>
+                                <p className="text-sm text-gray-900 leading-tight">{college}</p>
                             </div>
 
-                            <div className="space-y-2.5">
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-0.5">Institution</p>
-                                    <p className="text-sm text-gray-900 font-medium break-words">{college}</p>
-                                </div>
+                            <div>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Major</p>
+                                <p className="text-sm text-gray-900 leading-tight">{major}</p>
+                            </div>
 
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-0.5">Program</p>
-                                    <p className="text-sm text-gray-900 font-medium break-words">{major}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-0.5">Degree</p>
-                                    <p className="text-sm text-gray-900 font-medium break-words">{degree}</p>
-                                </div>
+                            <div>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Degree</p>
+                                <p className="text-sm text-gray-900 leading-tight">{degree}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Column 2: Interests */}
-                    <div className="space-y-3 min-w-0 w-full lg:w-auto max-w-sm lg:max-w-none">
+                    <div className="space-y-3">
                         {interests.length > 0 && (
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-2 text-gray-700 w-full">
-                                    <div className="flex items-center gap-2">
-                                        <Heart className="h-5 w-5 text-green-600 flex-shrink-0" />
-                                        <h3 className="text-base font-semibold">Interests</h3>
-                                    </div>
+                            <>
+                                <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-gray-200">
+                                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Interests</h3>
                                     {onEdit && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => onEdit(3)}
-                                            className="text-green-600 hover:text-green-700 hover:bg-green-50 h-7 px-2.5 text-xs flex-shrink-0"
+                                            className="text-green-600 hover:text-green-700 hover:bg-green-50 h-6 px-2 text-xs"
                                         >
                                             Edit
                                         </Button>
                                     )}
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {interests.map((interest, idx) => (
                                         <Badge
                                             key={idx}
                                             variant="secondary"
-                                            className="bg-green-100 text-green-800 hover:bg-green-200 px-2 py-0.5 text-xs h-fit max-w-full inline-block overflow-hidden text-ellipsis whitespace-nowrap"
+                                            className="!bg-green-600 !text-white !border-green-600 hover:!bg-green-700 active:!bg-green-800 focus-visible:!ring-2 focus-visible:!ring-green-300 px-2.5 py-0.5 text-xs font-medium"
                                         >
                                             {interest}
                                         </Badge>
                                     ))}
                                 </div>
-                            </div>
+                            </>
                         )}
                     </div>
 
                     {/* Column 3: Skills */}
-                    <div className="space-y-3 min-w-0 w-full lg:w-auto max-w-sm lg:max-w-none">
+                    <div className="space-y-3">
                         {skills.length > 0 && (
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-2 text-gray-700 w-full">
-                                    <div className="flex items-center gap-2">
-                                        <Wrench className="h-5 w-5 text-green-600 flex-shrink-0" />
-                                        <h3 className="text-base font-semibold">Skills</h3>
-                                    </div>
+                            <>
+                                <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-gray-200">
+                                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Skills</h3>
                                     {onEdit && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => onEdit(4)}
-                                            className="text-green-600 hover:text-green-700 hover:bg-green-50 h-7 px-2.5 text-xs flex-shrink-0"
+                                            className="text-green-600 hover:text-green-700 hover:bg-green-50 h-6 px-2 text-xs"
                                         >
                                             Edit
                                         </Button>
                                     )}
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {skills.map((skill, idx) => (
                                         <Badge
                                             key={idx}
                                             variant="secondary"
-                                            className="bg-blue-100 text-blue-800 hover:bg-blue-200 px-2 py-0.5 text-xs h-fit max-w-full inline-block overflow-hidden text-ellipsis whitespace-nowrap"
+                                            className="!bg-green-600 !text-white !border-green-600 hover:!bg-green-700 active:!bg-green-800 focus-visible:!ring-2 focus-visible:!ring-green-300 px-2.5 py-0.5 text-xs font-medium"
                                         >
                                             {skill}
                                         </Badge>
                                     ))}
                                 </div>
-                            </div>
+                            </>
                         )}
                     </div>
                 </div>

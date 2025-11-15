@@ -78,12 +78,10 @@ export default function RoadmapsPage() {
                             <div className="text-red-500">Error: {error}</div>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center">
-                            <ProfileCarousel
-                                profiles={profiles}
-                                onViewMore={handleViewMore}
-                            />
-                        </div>
+                        <ProfileCarousel
+                            profiles={profiles}
+                            onViewMore={handleViewMore}
+                        />
                     )}
                 </TabsContent>
 
