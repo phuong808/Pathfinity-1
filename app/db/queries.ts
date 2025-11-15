@@ -11,7 +11,9 @@ import {
   degreeProgram, 
   degreePathway, 
   pathwayCourse,
-  coursePrerequisite 
+  coursePrerequisite,
+  majorCareerMapping,
+  careerPathway
 } from "@/app/db/schema";
 import { eq, and, or, like, sql, desc, asc, inArray } from "drizzle-orm";
 
@@ -513,4 +515,249 @@ export async function getCourseDependents(courseId: number) {
   .from(coursePrerequisite)
   .leftJoin(course, eq(coursePrerequisite.courseId, course.id))
   .where(eq(coursePrerequisite.prerequisiteCourseId, courseId));
+}
+
+// ========== MAJOR & CAREER PATHWAY QUERIES ==========
+
+/**
+ * Get all majors for a specific campus
+ * Optimized with index on campus_id + major_name
+ */
+export async function getMajorsByCampus(campusId: string) {
+  return await db.select()
+    .from(majorCareerMapping)
+    .where(eq(majorCareerMapping.campusId, campusId))
+    .orderBy(asc(majorCareerMapping.majorName));
+}
+
+/**
+ * Get a specific major by name and campus
+ * Uses composite index for O(log n) lookup
+ */
+export async function getMajorByName(campusId: string, majorName: string) {
+  const [result] = await db.select()
+    .from(majorCareerMapping)
+    .where(and(
+      eq(majorCareerMapping.campusId, campusId),
+      eq(majorCareerMapping.majorName, majorName)
+    ))
+    .limit(1);
+  return result;
+}
+
+/**
+ * Get all majors by degree type (e.g., all BS programs)
+ * Uses index on degree_type
+ */
+export async function getMajorsByDegreeType(campusId: string, degreeType: string) {
+  return await db.select()
+    .from(majorCareerMapping)
+    .where(and(
+      eq(majorCareerMapping.campusId, campusId),
+      eq(majorCareerMapping.degreeType, degreeType)
+    ))
+    .orderBy(asc(majorCareerMapping.majorName));
+}
+
+/**
+ * Get career pathways for a specific major
+ * Returns the full career pathway details by joining with career_pathways table
+ * This is the main query for "what careers can I pursue with this major?"
+ */
+export async function getCareerPathwaysForMajor(campusId: string, majorName: string) {
+  // First, get the major and its career pathway IDs
+  const major = await getMajorByName(campusId, majorName);
+  
+  if (!major || !major.careerPathwayIds || major.careerPathwayIds.length === 0) {
+    return [];
+  }
+
+  // Then fetch all the career pathways
+  return await db.select()
+    .from(careerPathway)
+    .where(inArray(careerPathway.id, major.careerPathwayIds))
+    .orderBy(asc(careerPathway.title));
+}
+
+/**
+ * Get all career pathways (for reference data)
+ */
+export async function getAllCareerPathways() {
+  return await db.select()
+    .from(careerPathway)
+    .orderBy(asc(careerPathway.title));
+}
+
+/**
+ * Get a career pathway by ID
+ */
+export async function getCareerPathwayById(id: number) {
+  const [result] = await db.select()
+    .from(careerPathway)
+    .where(eq(careerPathway.id, id))
+    .limit(1);
+  return result;
+}
+
+/**
+ * Get a career pathway by title (case-insensitive)
+ */
+export async function getCareerPathwayByTitle(title: string) {
+  const normalized = title.toLowerCase().trim();
+  const [result] = await db.select()
+    .from(careerPathway)
+    .where(eq(careerPathway.normalizedTitle, normalized))
+    .limit(1);
+  return result;
+}
+
+/**
+ * Get career pathways by category
+ */
+export async function getCareerPathwaysByCategory(category: string) {
+  return await db.select()
+    .from(careerPathway)
+    .where(eq(careerPathway.category, category))
+    .orderBy(asc(careerPathway.title));
+}
+
+/**
+ * Search majors by partial name match
+ * Useful for autocomplete/search functionality
+ */
+export async function searchMajors(campusId: string, searchTerm: string) {
+  return await db.select()
+    .from(majorCareerMapping)
+    .where(and(
+      eq(majorCareerMapping.campusId, campusId),
+      like(majorCareerMapping.majorName, `%${searchTerm}%`)
+    ))
+    .orderBy(asc(majorCareerMapping.majorName))
+    .limit(20);
+}
+
+/**
+ * Get majors that lead to a specific career
+ * Useful for "what should I study to become a X?" queries
+ */
+export async function getMajorsForCareer(campusId: string, careerTitle: string) {
+  // First get the career pathway
+  const career = await getCareerPathwayByTitle(careerTitle);
+  
+  if (!career) {
+    return [];
+  }
+
+  // Find all majors that include this career in their pathways
+  // Using jsonb operator to check if array contains the career ID
+  return await db.select()
+    .from(majorCareerMapping)
+    .where(and(
+      eq(majorCareerMapping.campusId, campusId),
+      sql`${majorCareerMapping.careerPathwayIds} @> ${JSON.stringify([career.id])}::jsonb`
+    ))
+    .orderBy(asc(majorCareerMapping.majorName));
+}
+
+/**
+ * Get comprehensive major data with career pathways
+ * Returns major info along with full career pathway details
+ * Optimized for displaying complete major information
+ */
+export async function getMajorWithCareerPathways(campusId: string, majorName: string) {
+  const major = await getMajorByName(campusId, majorName);
+  
+  if (!major) {
+    return null;
+  }
+
+  const careers = await getCareerPathwaysForMajor(campusId, majorName);
+
+  return {
+    ...major,
+    careerPathways: careers,
+  };
+}
+
+/**
+ * Get statistics about majors and careers
+ * Useful for analytics and dashboards
+ */
+export async function getMajorCareerStats(campusId: string) {
+  const majors = await getMajorsByCampus(campusId);
+  
+  const degreeTypes = majors.reduce((acc, major) => {
+    acc[major.degreeType] = (acc[major.degreeType] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const totalCareerPathways = majors.reduce((sum, major) => {
+    return sum + (major.careerPathwayIds?.length || 0);
+  }, 0);
+
+  return {
+    totalMajors: majors.length,
+    degreeTypes,
+    averageCareerPathwaysPerMajor: majors.length > 0 ? totalCareerPathways / majors.length : 0,
+  };
+}
+
+// ========== PROFILE QUERIES ==========
+
+/**
+ * Get user profile with all fields
+ */
+export async function getProfileByUserId(userId: string) {
+  const { profile } = await import('@/app/db/schema');
+  const [userProfile] = await db
+    .select()
+    .from(profile)
+    .where(eq(profile.userId, userId))
+    .limit(1);
+  
+  return userProfile;
+}
+
+/**
+ * Get profiles by dream job
+ */
+export async function getProfilesByDreamJob(dreamJob: string) {
+  const { profile } = await import('@/app/db/schema');
+  return await db
+    .select()
+    .from(profile)
+    .where(eq(profile.dreamJob, dreamJob));
+}
+
+/**
+ * Get profiles by major
+ */
+export async function getProfilesByMajor(major: string) {
+  const { profile } = await import('@/app/db/schema');
+  return await db
+    .select()
+    .from(profile)
+    .where(eq(profile.major, major));
+}
+
+/**
+ * Get profiles by user type
+ */
+export async function getProfilesByUserType(userType: string) {
+  const { profile } = await import('@/app/db/schema');
+  return await db
+    .select()
+    .from(profile)
+    .where(eq(profile.userType, userType));
+}
+
+/**
+ * Search profiles by interests
+ */
+export async function searchProfilesByInterest(interest: string) {
+  const { profile } = await import('@/app/db/schema');
+  return await db
+    .select()
+    .from(profile)
+    .where(sql`${profile.interests}::jsonb @> ${JSON.stringify([interest])}::jsonb`);
 }

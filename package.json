@@ -8,7 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "cleanup-duplicates": "tsx scripts/run-cleanup.ts",
-    "ingest-pathways": "tsx scripts/ingest/ingest-pathways.ts"
+    "ingest-pathways": "tsx scripts/ingest/ingest-pathways.ts",
+    "ingest:uh-manoa-careers": "tsx --env-file=.env.local scripts/ingest/uh-manoa-majors-careers.ts",
+    "generate:major-career-embeddings": "tsx --env-file=.env.local scripts/ingest/generate-major-career-embeddings.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.58",

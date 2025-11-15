@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from './index';
-import { chat, message } from './schema';
+import { chat, message, profile } from './schema';
 import { eq, desc } from 'drizzle-orm';
 import { generateId, UIMessage } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -71,7 +71,7 @@ export async function loadChat(chatId: string): Promise<UIMessage[]> {
   return messages.map((msg) => ({
     id: msg.id,
     role: msg.role as 'user' | 'assistant',
-    parts: msg.content as any,
+    parts: msg.content as UIMessage['parts'],
     createdAt: msg.createdAt,
   }));
 }
@@ -208,4 +208,238 @@ export async function deleteMessage(messageId: string, chatId: string): Promise<
   await db
     .delete(message)
     .where(eq(message.chatId, chatId));
+}
+
+/* ========== PROFILE MANAGEMENT ========== */
+
+/**
+ * Profile data interface for comprehensive user information
+ */
+export interface ProfileData {
+  // Core fields for career roadmap and academic counselor
+  dreamJob?: string;
+  major?: string;
+  
+  // User categorization
+  userType?: string; // 'high_school_student' | 'college_student' | 'career_changer' | 'professional'
+  
+  // Career exploration fields
+  interests?: string[];
+  strengths?: string[];
+  weaknesses?: string[];
+  experience?: Array<{
+    title?: string;
+    company?: string;
+    description?: string;
+    duration?: string;
+    type?: string; // 'internship' | 'part-time' | 'full-time' | 'volunteer' | 'project'
+  }>;
+  jobPreference?: {
+    workEnvironment?: string[];
+    industryPreferences?: string[];
+    salaryExpectation?: string;
+    location?: string[];
+    companySize?: string;
+    workLifeBalance?: string;
+  };
+  
+  // Legacy fields
+  career?: string;
+  college?: string;
+  degree?: string;
+  skills?: unknown;
+  roadmap?: unknown;
+}
+
+/**
+ * Get user profile by user ID
+ * @param userId - The user ID
+ * @returns The user profile or null if not found
+ */
+export async function getUserProfile(userId: string): Promise<ProfileData | null> {
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    throw new Error('getUserProfile requires a valid userId');
+  }
+
+  const [userProfile] = await db
+    .select()
+    .from(profile)
+    .where(eq(profile.userId, userId.trim()))
+    .limit(1);
+  
+  if (!userProfile) return null;
+  
+  return {
+    dreamJob: userProfile.dreamJob ?? undefined,
+    major: userProfile.major ?? undefined,
+    userType: userProfile.userType ?? undefined,
+    interests: userProfile.interests as string[] ?? undefined,
+    strengths: userProfile.strengths as string[] ?? undefined,
+    weaknesses: userProfile.weaknesses as string[] ?? undefined,
+    experience: userProfile.experience as ProfileData['experience'] ?? undefined,
+    jobPreference: userProfile.jobPreference as ProfileData['jobPreference'] ?? undefined,
+    career: userProfile.career ?? undefined,
+    college: userProfile.college ?? undefined,
+    degree: userProfile.degree ?? undefined,
+    skills: userProfile.skills ?? undefined,
+    roadmap: userProfile.roadmap ?? undefined,
+  };
+}
+
+/**
+ * Create a new user profile
+ * @param userId - The user ID
+ * @param profileData - The profile data to create
+ * @returns The created profile
+ */
+export async function createUserProfile(
+  userId: string,
+  profileData: ProfileData
+): Promise<ProfileData> {
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    throw new Error('createUserProfile requires a valid userId');
+  }
+
+  const [newProfile] = await db
+    .insert(profile)
+    .values({
+      userId: userId.trim(),
+      dreamJob: profileData.dreamJob ?? null,
+      major: profileData.major ?? null,
+      userType: profileData.userType ?? null,
+      interests: profileData.interests ?? null,
+      strengths: profileData.strengths ?? null,
+      weaknesses: profileData.weaknesses ?? null,
+      experience: profileData.experience ?? null,
+      jobPreference: profileData.jobPreference ?? null,
+      career: profileData.career ?? null,
+      college: profileData.college ?? null,
+      degree: profileData.degree ?? null,
+      skills: profileData.skills ?? null,
+      roadmap: profileData.roadmap ?? null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning();
+  
+  return {
+    dreamJob: newProfile.dreamJob ?? undefined,
+    major: newProfile.major ?? undefined,
+    userType: newProfile.userType ?? undefined,
+    interests: newProfile.interests as string[] ?? undefined,
+    strengths: newProfile.strengths as string[] ?? undefined,
+    weaknesses: newProfile.weaknesses as string[] ?? undefined,
+    experience: newProfile.experience as ProfileData['experience'] ?? undefined,
+    jobPreference: newProfile.jobPreference as ProfileData['jobPreference'] ?? undefined,
+    career: newProfile.career ?? undefined,
+    college: newProfile.college ?? undefined,
+    degree: newProfile.degree ?? undefined,
+    skills: newProfile.skills ?? undefined,
+    roadmap: newProfile.roadmap ?? undefined,
+  };
+}
+
+/**
+ * Update an existing user profile
+ * @param userId - The user ID
+ * @param profileData - The profile data to update (partial update)
+ * @returns The updated profile
+ */
+export async function updateUserProfile(
+  userId: string,
+  profileData: Partial<ProfileData>
+): Promise<ProfileData> {
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    throw new Error('updateUserProfile requires a valid userId');
+  }
+
+  // Build update object with only provided fields
+  const updateData: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+  
+  if (profileData.dreamJob !== undefined) updateData.dreamJob = profileData.dreamJob;
+  if (profileData.major !== undefined) updateData.major = profileData.major;
+  if (profileData.userType !== undefined) updateData.userType = profileData.userType;
+  if (profileData.interests !== undefined) updateData.interests = profileData.interests;
+  if (profileData.strengths !== undefined) updateData.strengths = profileData.strengths;
+  if (profileData.weaknesses !== undefined) updateData.weaknesses = profileData.weaknesses;
+  if (profileData.experience !== undefined) updateData.experience = profileData.experience;
+  if (profileData.jobPreference !== undefined) updateData.jobPreference = profileData.jobPreference;
+  if (profileData.career !== undefined) updateData.career = profileData.career;
+  if (profileData.college !== undefined) updateData.college = profileData.college;
+  if (profileData.degree !== undefined) updateData.degree = profileData.degree;
+  if (profileData.skills !== undefined) updateData.skills = profileData.skills;
+  if (profileData.roadmap !== undefined) updateData.roadmap = profileData.roadmap;
+
+  const [updatedProfile] = await db
+    .update(profile)
+    .set(updateData)
+    .where(eq(profile.userId, userId.trim()))
+    .returning();
+  
+  if (!updatedProfile) {
+    throw new Error('Profile not found');
+  }
+  
+  return {
+    dreamJob: updatedProfile.dreamJob ?? undefined,
+    major: updatedProfile.major ?? undefined,
+    userType: updatedProfile.userType ?? undefined,
+    interests: updatedProfile.interests as string[] ?? undefined,
+    strengths: updatedProfile.strengths as string[] ?? undefined,
+    weaknesses: updatedProfile.weaknesses as string[] ?? undefined,
+    experience: updatedProfile.experience as ProfileData['experience'] ?? undefined,
+    jobPreference: updatedProfile.jobPreference as ProfileData['jobPreference'] ?? undefined,
+    career: updatedProfile.career ?? undefined,
+    college: updatedProfile.college ?? undefined,
+    degree: updatedProfile.degree ?? undefined,
+    skills: updatedProfile.skills ?? undefined,
+    roadmap: updatedProfile.roadmap ?? undefined,
+  };
+}
+
+/**
+ * Create or update user profile (upsert)
+ * @param userId - The user ID
+ * @param profileData - The profile data to create or update
+ * @returns The created or updated profile
+ */
+export async function upsertUserProfile(
+  userId: string,
+  profileData: ProfileData
+): Promise<ProfileData> {
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    throw new Error('upsertUserProfile requires a valid userId');
+  }
+
+  const existingProfile = await getUserProfile(userId);
+  
+  if (existingProfile) {
+    return await updateUserProfile(userId, profileData);
+  } else {
+    return await createUserProfile(userId, profileData);
+  }
+}
+
+/**
+ * Update chat with extracted profile information
+ * @param chatId - The chat ID
+ * @param dreamJob - Extracted dream job
+ * @param major - Extracted major
+ */
+export async function updateChatProfileData(
+  chatId: string,
+  dreamJob?: string,
+  major?: string
+): Promise<void> {
+  await db
+    .update(chat)
+    .set({
+      extractedDreamJob: dreamJob ?? null,
+      extractedMajor: major ?? null,
+      profileDataExtracted: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(chat.id, chatId));
 }

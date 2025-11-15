@@ -85,6 +85,20 @@
       "when": 1763168395906,
       "tag": "0011_small_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1763222085039,
+      "tag": "0012_loose_nightshade",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1763242554697,
+      "tag": "0013_gifted_misty_knight",
+      "breakpoints": true
     }
   ]
 }

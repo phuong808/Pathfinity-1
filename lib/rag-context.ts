@@ -10,9 +10,11 @@ import {
   degreeProgram,
   degreePathway,
   campus,
-  degree
+  degree,
+  majorCareerMapping,
+  careerPathway
 } from '@/app/db/schema';
-import { eq, like, or, and } from 'drizzle-orm';
+import { eq, like, or, and, inArray } from 'drizzle-orm';
 
 interface RagContext {
   relevantCourses: Array<{
@@ -33,6 +35,12 @@ interface RagContext {
     programName: string;
     semesterCount: number;
     totalCredits: number | null;
+  }>;
+  relevantMajorCareers: Array<{
+    majorName: string;
+    degreeType: string;
+    credits: string;
+    careerPathways: string[];
   }>;
   contextSummary: string;
 }
@@ -58,6 +66,7 @@ export async function buildRagContext(
     relevantCourses: [],
     relevantPrograms: [],
     relevantPathways: [],
+    relevantMajorCareers: [],
     contextSummary: '',
   };
 
@@ -76,6 +85,68 @@ export async function buildRagContext(
           campus: result.campusName || '',
           credits: result.numUnits || 'N/A',
         });
+      }
+
+      // Major-Career results (when refId starts with 'major-' or 'career-')
+      if (result.content && context.relevantMajorCareers.length < limit) {
+        const metadata = result.content as Record<string, unknown>;
+        
+        // Check if it's a major result
+        if (metadata?.majorId && metadata?.majorName) {
+          const majorId = metadata.majorId as number;
+          
+          // Fetch major details with career pathways
+          const [majorDetails] = await db
+            .select()
+            .from(majorCareerMapping)
+            .where(eq(majorCareerMapping.id, majorId))
+            .limit(1);
+
+          if (majorDetails && majorDetails.careerPathwayIds && majorDetails.careerPathwayIds.length > 0) {
+            // Get career pathway titles
+            const careers = await db
+              .select({ title: careerPathway.title })
+              .from(careerPathway)
+              .where(inArray(careerPathway.id, majorDetails.careerPathwayIds));
+
+            context.relevantMajorCareers.push({
+              majorName: majorDetails.majorName,
+              degreeType: majorDetails.degreeType,
+              credits: majorDetails.credits || 'N/A',
+              careerPathways: careers.map(c => c.title),
+            });
+          }
+        }
+        
+        // Check if it's a career result - find related majors
+        if (metadata?.careerId && metadata?.careerTitle) {
+          // Find majors that lead to this career
+          const majorsWithCareer = await db
+            .select()
+            .from(majorCareerMapping)
+            .where(
+              eq(majorCareerMapping.campusId, 'uh-manoa')
+            )
+            .limit(20);
+
+          // Filter majors that include this career
+          const careerId = metadata.careerId as number;
+          for (const major of majorsWithCareer) {
+            if (major.careerPathwayIds?.includes(careerId) && context.relevantMajorCareers.length < limit) {
+              const careers = await db
+                .select({ title: careerPathway.title })
+                .from(careerPathway)
+                .where(inArray(careerPathway.id, major.careerPathwayIds || []));
+
+              context.relevantMajorCareers.push({
+                majorName: major.majorName,
+                degreeType: major.degreeType,
+                credits: major.credits || 'N/A',
+                careerPathways: careers.map(c => c.title),
+              });
+            }
+          }
+        }
       }
 
       // Program-related results from metadata
@@ -135,10 +206,24 @@ export async function buildRagContext(
       );
     }
 
+    if (context.relevantMajorCareers.length > 0) {
+      summaryParts.push(
+        `💼 RELEVANT MAJORS & CAREER PATHWAYS (${context.relevantMajorCareers.length} found via semantic search):\n` +
+        context.relevantMajorCareers
+          .map(mc => {
+            const careerList = mc.careerPathways.length > 5 
+              ? mc.careerPathways.slice(0, 5).join(', ') + `, and ${mc.careerPathways.length - 5} more`
+              : mc.careerPathways.join(', ');
+            return `  • ${mc.majorName} (${mc.degreeType}) - ${mc.credits} credits\n    Career Pathways: ${careerList}`;
+          })
+          .join('\n\n')
+      );
+    }
+
     if (summaryParts.length > 0) {
       context.contextSummary = 
         `\n=== SEMANTIC SEARCH RESULTS FROM DATABASE ===\n` +
-        `The following information was found by searching ${context.relevantCourses.length + context.relevantPrograms.length} embeddings:\n\n` +
+        `The following information was found by searching ${context.relevantCourses.length + context.relevantPrograms.length + context.relevantMajorCareers.length} embeddings:\n\n` +
         summaryParts.join('\n\n') +
         `\n\n⚠️  IMPORTANT: These are CONFIRMED to exist in the database. Use tools to get complete details.`;
     }
@@ -309,4 +394,74 @@ export async function getComprehensiveContext(userQuery: string) {
   }
 
   return context;
+}
+
+/**
+ * Get major-career pathway information
+ */
+export async function getMajorCareerContext(majorName: string, campusId: string = 'uh-manoa') {
+  const [major] = await db
+    .select()
+    .from(majorCareerMapping)
+    .where(
+      and(
+        eq(majorCareerMapping.campusId, campusId),
+        eq(majorCareerMapping.majorName, majorName)
+      )
+    )
+    .limit(1);
+
+  if (!major || !major.careerPathwayIds || major.careerPathwayIds.length === 0) {
+    return null;
+  }
+
+  const careers = await db
+    .select()
+    .from(careerPathway)
+    .where(inArray(careerPathway.id, major.careerPathwayIds));
+
+  return {
+    major: {
+      name: major.majorName,
+      degreeType: major.degreeType,
+      credits: major.credits,
+    },
+    careers: careers.map(c => ({
+      title: c.title,
+      category: c.category,
+      description: c.description,
+    })),
+  };
+}
+
+/**
+ * Find majors that lead to a specific career
+ */
+export async function findMajorsForCareer(careerTitle: string, campusId: string = 'uh-manoa') {
+  // Find the career pathway
+  const [career] = await db
+    .select()
+    .from(careerPathway)
+    .where(eq(careerPathway.normalizedTitle, careerTitle.toLowerCase().trim()))
+    .limit(1);
+
+  if (!career) {
+    return [];
+  }
+
+  // Find all majors that include this career
+  const allMajors = await db
+    .select()
+    .from(majorCareerMapping)
+    .where(eq(majorCareerMapping.campusId, campusId));
+
+  const matchingMajors = allMajors.filter(major => 
+    major.careerPathwayIds?.includes(career.id)
+  );
+
+  return matchingMajors.map(m => ({
+    majorName: m.majorName,
+    degreeType: m.degreeType,
+    credits: m.credits,
+  }));
 }

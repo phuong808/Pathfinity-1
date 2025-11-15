@@ -22,20 +22,59 @@ export const user = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// User profiles / pathways
+// User profiles / pathways - Enhanced for comprehensive career planning
 export const profile = pgTable("profiles", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  
+  // Core profile fields - used for career roadmap and academic counselor matching
+  dreamJob: text("dream_job"), // Primary career goal - linked to career pathways
+  major: text("major"), // Primary major - used for academic planning
+  
+  // User categorization
+  userType: text("user_type"), // e.g., 'high_school_student', 'college_student', 'career_changer', 'professional'
+  
+  // Career exploration fields - used by chatbot for recommendations
+  interests: jsonb("interests").$type<string[]>(), // Array of interests
+  strengths: jsonb("strengths").$type<string[]>(), // Array of strengths
+  weaknesses: jsonb("weaknesses").$type<string[]>(), // Array of weaknesses/areas to improve
+  experience: jsonb("experience").$type<{
+    title?: string;
+    company?: string;
+    description?: string;
+    duration?: string;
+    type?: string; // 'internship', 'part-time', 'full-time', 'volunteer', 'project'
+  }[]>(), // Array of experience objects
+  jobPreference: jsonb("job_preference").$type<{
+    workEnvironment?: string[]; // e.g., 'remote', 'office', 'hybrid'
+    industryPreferences?: string[];
+    salaryExpectation?: string;
+    location?: string[];
+    companySize?: string; // e.g., 'startup', 'mid-size', 'enterprise'
+    workLifeBalance?: string;
+  }>(), // Object containing job preferences
+  
+  // Legacy fields (keeping for backward compatibility)
   career: text("career"),
   college: text("college"),
-  major: text("major"),
   degree: text("degree"),
-  interests: jsonb("interests"),
   skills: jsonb("skills"),
   roadmap: jsonb("roadmap"),
+  
+  // Metadata
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+},
+(table) => [
+  // Index for fast user lookup
+  index("profile_user_idx").on(table.userId),
+  // Index for dream job queries
+  index("profile_dream_job_idx").on(table.dreamJob),
+  // Index for major queries
+  index("profile_major_idx").on(table.major),
+  // Index for user type filtering
+  index("profile_user_type_idx").on(table.userType),
+]);
 
 export const session = pgTable("sessions", {
   id: text("id").primaryKey(),
@@ -112,6 +151,12 @@ export const chat = pgTable("chats", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   title: text("title"), // optional, can be generated from first message
+  
+  // Profile data extracted from this chat session
+  extractedDreamJob: text("extracted_dream_job"),
+  extractedMajor: text("extracted_major"),
+  profileDataExtracted: boolean("profile_data_extracted").default(false),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -258,4 +303,53 @@ export const coursePrerequisite = pgTable("course_prerequisites", {
 (table) => [
   index("course_prereq_course_idx").on(table.courseId),
   index("course_prereq_prerequisite_idx").on(table.prerequisiteCourseId),
+]);
+
+/* UH Manoa Major to Career Pathway Mapping */
+
+// Major to Career Mapping - stores the association between majors and their career pathways
+// Optimized for fast retrieval with composite indexes
+export const majorCareerMapping = pgTable("major_career_mappings", {
+  id: serial("id").primaryKey(),
+  campusId: text("campus_id").notNull().references(() => campus.id, { onDelete: "cascade" }),
+  majorName: text("major_name").notNull(), // e.g., "Accounting - BS", "Anthropology - BA"
+  degreeType: text("degree_type").notNull(), // e.g., "BS", "BA", "MACC", "BArch"
+  credits: text("credits"), // Changed to text to support ranges like "120-137" or single values like "120"
+  // Denormalized for fast queries - stores array of career pathway IDs
+  careerPathwayIds: jsonb("career_pathway_ids").notNull().$type<number[]>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+},
+(table) => [
+  // Primary lookup: get major by campus and name
+  index("major_career_campus_major_idx").on(table.campusId, table.majorName),
+  // Filter by degree type for analytics
+  index("major_career_degree_type_idx").on(table.degreeType),
+  // Unique constraint: one major per campus
+  index("major_career_unique_idx").on(table.campusId, table.majorName),
+]);
+
+// Career Pathways - normalized storage of career titles
+// Prevents duplication and enables efficient querying
+export const careerPathway = pgTable("career_pathways", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull().unique(), // e.g., "Tax Accountant", "CPA (Certified Public Accountant)"
+  // Normalized title for matching (lowercase, trimmed)
+  normalizedTitle: text("normalized_title").notNull(),
+  // Category/field for grouping (can be populated later)
+  category: text("category"), // e.g., "Accounting", "Technology", "Healthcare"
+  // Description (can be populated from external APIs like O*NET)
+  description: text("description"),
+  // Additional metadata (salary ranges, education requirements, etc.)
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+},
+(table) => [
+  // Fast lookup by title
+  index("career_pathway_title_idx").on(table.title),
+  // Fast lookup by normalized title for case-insensitive searches
+  index("career_pathway_normalized_idx").on(table.normalizedTitle),
+  // Category filtering
+  index("career_pathway_category_idx").on(table.category),
 ]);

@@ -1,0 +1,1275 @@
+{
+  "majors_career_pathways": [
+    {
+      "id": 1,
+      "major": "Accounting - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Tax Accountant",
+        "Internal Auditor",
+        "Financial Analyst",
+        "CPA (Certified Public Accountant)",
+        "Chief Financial Officer"
+      ]
+    },
+    {
+      "id": 2,
+      "major": "Accounting - MACC",
+      "credits": 30,
+      "degree_type": "MACC",
+      "career_pathways": [
+        "Senior Accountant",
+        "Audit Manager",
+        "Financial Controller",
+        "CFO (Chief Financial Officer)",
+        "Investment Analyst"
+      ]
+    },
+    {
+      "id": 3,
+      "major": "Anthropology - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Archaeologist",
+        "Museum Curator",
+        "Cultural Resource Manager",
+        "Social Researcher",
+        "Human Resources Specialist",
+        "International Development Worker",
+        "Market Research Analyst",
+        "Public Health Educator",
+        "Heritage Consultant",
+        "Ethnographer",
+        "Academic Researcher",
+        "NGO Program Coordinator",
+        "Diversity and Inclusion Specialist",
+        "University Professor (requires PhD)",
+        "Public Health Professional (requires MPH)"
+      ]
+    },
+    {
+      "id": 4,
+      "major": "Anthropology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Forensic Anthropologist",
+        "Archaeological Scientist",
+        "Paleoanthropologist",
+        "Conservation Specialist",
+        "University Professor (requires PhD)"
+      ]
+    },
+    {
+      "id": 5,
+      "major": "Architecture - BArch",
+      "credits": 165,
+      "degree_type": "BArch",
+      "career_pathways": [
+        "Licensed Architect",
+        "Architectural Designer",
+        "Sustainable Design Consultant",
+        "Construction Manager",
+        "Urban Planner (requires MUP/MURP)"
+      ]
+    },
+    {
+      "id": 6,
+      "major": "Art - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Fine Artist",
+        "Gallery Director",
+        "Art Teacher",
+        "Illustrator",
+        "Graphic Designer"
+      ]
+    },
+    {
+      "id": 7,
+      "major": "Art History - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Museum Curator",
+        "Art Conservator",
+        "Gallery Manager",
+        "Art Historian",
+        "Art Critic"
+      ]
+    },
+    {
+      "id": 8,
+      "major": "Asian Studies - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Foreign Service Officer",
+        "Intelligence Analyst",
+        "International Relations Specialist",
+        "International Business Consultant",
+        "Translator/Interpreter"
+      ]
+    },
+    {
+      "id": 9,
+      "major": "Atmospheric Sciences - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Meteorologist",
+        "Weather Forecaster",
+        "Climate Scientist",
+        "Environmental Consultant",
+        "Broadcast Meteorologist"
+      ]
+    },
+    {
+      "id": 10,
+      "major": "Biology - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Research Assistant",
+        "Physician (requires MD/DO)",
+        "Dentist (requires DMD/DDS)",
+        "Pharmacist (requires PharmD)",
+        "Physician Assistant (requires MS)"
+      ]
+    },
+    {
+      "id": 11,
+      "major": "Biology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Research Assistant",
+        "Physician (requires MD/DO)",
+        "Dentist (requires DMD/DDS)",
+        "Pharmacist (requires PharmD)",
+        "Physician Assistant (requires MS)"
+      ]
+    },
+    {
+      "id": 12,
+      "major": "Botany - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Science Writer",
+        "Environmental Consultant",
+        "Park Naturalist",
+        "Plant Conservation Specialist",
+        "Nature Center Director"
+      ]
+    },
+    {
+      "id": 13,
+      "major": "Botany - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Nature Center Director",
+        "Environmental Consultant",
+        "Plant Biology Researcher (requires PhD)",
+        "University Professor (requires PhD)",
+        "Agricultural Scientist (requires MS/PhD)"
+      ]
+    },
+    {
+      "id": 14,
+      "major": "Business Administration - BBA",
+      "credits": 120,
+      "degree_type": "BBA",
+      "career_pathways": [
+        "Business Analyst",
+        "Human Resources Manager",
+        "Supply Chain Manager",
+        "Product Manager",
+        "Healthcare Administrator (requires MHA)"
+      ]
+    },
+    {
+      "id": 15,
+      "major": "Cell and Molecular Biology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Medical Research Scientist",
+        "Clinical Laboratory Scientist",
+        "Physician (requires MD/DO)",
+        "PhD Research Scientist",
+        "Pharmacologist (requires PhD)"
+      ]
+    },
+    {
+      "id": 16,
+      "major": "Chemistry - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Chemistry Teacher",
+        "Patent Agent",
+        "Laboratory Technician",
+        "Chemical Information Specialist",
+        "Forensic Science Technician"
+      ]
+    },
+    {
+      "id": 17,
+      "major": "Chemistry - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Pharmacist (requires PharmD)",
+        "Physician (requires MD/DO)",
+        "Chemical Engineer (requires MS)",
+        "Materials Science Engineer (requires MS/PhD)",
+        "Medicinal Chemist (requires PhD)"
+      ]
+    },
+    {
+      "id": 18,
+      "major": "Chinese - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Translator",
+        "Interpreter",
+        "Language Teacher",
+        "International Business Specialist",
+        "International Education Coordinator"
+      ]
+    },
+    {
+      "id": 19,
+      "major": "Civil and Environmental Engineering - BS",
+      "credits": 128,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Civil Engineer",
+        "Geotechnical Engineer",
+        "Construction Manager",
+        "Structural Engineer (requires MS/PE)",
+        "Urban Planner (requires MUP)"
+      ]
+    },
+    {
+      "id": 20,
+      "major": "Communication - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Public Relations Specialist",
+        "Content Strategist",
+        "Event Coordinator",
+        "Advertising Account Executive",
+        "Digital Marketing Specialist"
+      ]
+    },
+    {
+      "id": 21,
+      "major": "Computer Engineering - BS",
+      "credits": 129,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Embedded Systems Engineer",
+        "Network Engineer",
+        "Computer Architect",
+        "Robotics Engineer",
+        "Telecommunications Engineer"
+      ]
+    },
+    {
+      "id": 22,
+      "major": "Computer Science - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Software Developer",
+        "IT Consultant",
+        "Technical Project Manager",
+        "Database Administrator",
+        "Product Manager (requires MBA)"
+      ]
+    },
+    {
+      "id": 23,
+      "major": "Computer Science - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Software Engineer",
+        "DevOps Engineer",
+        "Cybersecurity Engineer",
+        "Data Scientist (requires MS in Data Science)",
+        "Machine Learning Engineer (requires MS)"
+      ]
+    },
+    {
+      "id": 24,
+      "major": "Dance - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Dance Teacher",
+        "Choreographer",
+        "Arts Administrator",
+        "Dance Therapist",
+        "Performing Arts Manager"
+      ]
+    },
+    {
+      "id": 25,
+      "major": "Dance - BFA",
+      "credits": 120,
+      "degree_type": "BFA",
+      "career_pathways": [
+        "Professional Dancer",
+        "Ballet Dancer",
+        "Musical Theatre Performer",
+        "Dance Studio Director",
+        "Dance Instructor"
+      ]
+    },
+    {
+      "id": 26,
+      "major": "Earth Science - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Earth Science Teacher",
+        "Geophysicist",
+        "Oceanographer",
+        "Environmental Consultant",
+        "Petroleum Geologist"
+      ]
+    },
+    {
+      "id": 27,
+      "major": "Economics - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Market Research Analyst",
+        "Financial Analyst",
+        "International Trade Specialist",
+        "Economist (requires MA/PhD)",
+        "Lawyer (requires JD)"
+      ]
+    },
+    {
+      "id": 28,
+      "major": "Economics - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Financial Analyst",
+        "Business Intelligence Analyst",
+        "Operations Research Analyst",
+        "Quantitative Finance Analyst (requires MS)",
+        "Actuary (requires actuarial exams)"
+      ]
+    },
+    {
+      "id": 29,
+      "major": "Electrical Engineering - BS",
+      "credits": 129,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Electrical Engineer",
+        "Electronics Engineer",
+        "Signal Processing Engineer",
+        "Automation Engineer",
+        "Circuit Design Engineer"
+      ]
+    },
+    {
+      "id": 30,
+      "major": "Elementary Education - BEd",
+      "credits": 120,
+      "degree_type": "BEd",
+      "career_pathways": [
+        "Elementary School Teacher",
+        "Primary School Teacher",
+        "Special Education Teacher",
+        "Education Administrator",
+        "School Principal"
+      ]
+    },
+    {
+      "id": 31,
+      "major": "English - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Journalist",
+        "English Teacher",
+        "Lawyer (requires JD)",
+        "University Professor (requires PhD)",
+        "Library Science Professional (requires MLS)"
+      ]
+    },
+    {
+      "id": 32,
+      "major": "Ethnic Studies - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Social Justice Advocate",
+        "Policy Analyst",
+        "Cultural Program Coordinator",
+        "Community Development Specialist",
+        "Human Rights Worker"
+      ]
+    },
+    {
+      "id": 33,
+      "major": "Family Resources - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Family Resource Coordinator",
+        "Case Manager",
+        "Social Services Specialist",
+        "Family Support Worker",
+        "Community Outreach Coordinator"
+      ]
+    },
+    {
+      "id": 34,
+      "major": "Finance - BBA",
+      "credits": 120,
+      "degree_type": "BBA",
+      "career_pathways": [
+        "Investment Banker",
+        "Portfolio Manager",
+        "Financial Advisor",
+        "MBA in Finance",
+        "Chief Financial Officer (requires MBA/CPA)"
+      ]
+    },
+    {
+      "id": 35,
+      "major": "Food Science and Human Nutrition - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Registered Dietitian",
+        "Nutritionist",
+        "Food Scientist",
+        "Food Safety Specialist",
+        "Product Development Scientist"
+      ]
+    },
+    {
+      "id": 36,
+      "major": "French - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "French Teacher",
+        "Translator/Interpreter",
+        "International Business Specialist",
+        "Foreign Service Officer",
+        "Localization Specialist"
+      ]
+    },
+    {
+      "id": 37,
+      "major": "Geography - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Urban Planner",
+        "Geographic Information Systems Specialist",
+        "Environmental Planner",
+        "Location Analyst",
+        "Cartographer"
+      ]
+    },
+    {
+      "id": 38,
+      "major": "Geography - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "GIS Analyst",
+        "Remote Sensing Specialist",
+        "Urban and Regional Planner",
+        "Environmental Consultant",
+        "Geospatial Scientist"
+      ]
+    },
+    {
+      "id": 39,
+      "major": "Geology and Geophysics - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Environmental Consultant",
+        "Earth Science Teacher",
+        "Conservation Specialist",
+        "Science Communicator",
+        "Park Ranger"
+      ]
+    },
+    {
+      "id": 40,
+      "major": "Geology and Geophysics - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Geophysicist",
+        "Hydrogeologist",
+        "Volcanologist",
+        "Marine Geologist",
+        "Engineering Geologist"
+      ]
+    },
+    {
+      "id": 41,
+      "major": "German - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "German Teacher",
+        "Translator",
+        "International Business Specialist",
+        "Foreign Service Officer",
+        "Tourism Manager"
+      ]
+    },
+    {
+      "id": 42,
+      "major": "Global Environmental Science - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Environmental Scientist",
+        "Climate Change Analyst",
+        "Sustainability Consultant",
+        "Conservation Scientist",
+        "Environmental Policy Analyst"
+      ]
+    },
+    {
+      "id": 43,
+      "major": "Hawaiian Language - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Hawaiian Language Teacher",
+        "Hawaiian Language Translator",
+        "Hawaiian Culture Educator",
+        "Language Revitalization Specialist",
+        "Cultural Program Coordinator"
+      ]
+    },
+    {
+      "id": 44,
+      "major": "Hawaiian Studies - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Hawaiian Culture Educator",
+        "Cultural Resource Manager",
+        "Museum Curator",
+        "Indigenous Rights Advocate",
+        "Cultural Tourism Specialist"
+      ]
+    },
+    {
+      "id": 45,
+      "major": "History - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Historian",
+        "History Teacher",
+        "Museum Curator",
+        "Archivist",
+        "Public Historian"
+      ]
+    },
+    {
+      "id": 46,
+      "major": "Human Development and Family Studies - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Family Life Educator",
+        "Child Development Specialist",
+        "Family Therapist",
+        "Social Worker",
+        "Youth Program Coordinator"
+      ]
+    },
+    {
+      "id": 47,
+      "major": "Information and Computer Sciences - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Information Systems Manager",
+        "Network Administrator",
+        "Cybersecurity Analyst",
+        "Data Analyst",
+        "IT Project Manager"
+      ]
+    },
+    {
+      "id": 48,
+      "major": "Interdisciplinary Studies - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Project Coordinator",
+        "Research Assistant",
+        "Program Manager",
+        "Policy Analyst",
+        "Communications Specialist"
+      ]
+    },
+    {
+      "id": 49,
+      "major": "Japanese - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Japanese Language Teacher",
+        "Translator",
+        "International Business Specialist",
+        "Foreign Service Officer",
+        "Cultural Liaison"
+      ]
+    },
+    {
+      "id": 50,
+      "major": "Journalism - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Journalist",
+        "News Editor",
+        "Broadcast Journalist",
+        "Photojournalist",
+        "Public Relations Specialist"
+      ]
+    },
+    {
+      "id": 51,
+      "major": "Korean - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Korean Language Teacher",
+        "Translator",
+        "International Business Specialist",
+        "Foreign Service Officer",
+        "Cultural Liaison"
+      ]
+    },
+    {
+      "id": 52,
+      "major": "Linguistics - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Linguist",
+        "Language Teacher",
+        "Translator",
+        "Computational Linguist",
+        "Forensic Linguist"
+      ]
+    },
+    {
+      "id": 53,
+      "major": "Management - BBA",
+      "credits": 120,
+      "degree_type": "BBA",
+      "career_pathways": [
+        "Operations Manager",
+        "Human Resources Manager",
+        "Supply Chain Manager",
+        "Management Consultant",
+        "Business Development Manager"
+      ]
+    },
+    {
+      "id": 54,
+      "major": "Marine Biology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Marine Biologist",
+        "Oceanographer",
+        "Marine Conservationist",
+        "Fisheries Biologist",
+        "Marine Mammalogist"
+      ]
+    },
+    {
+      "id": 55,
+      "major": "Marketing - BBA",
+      "credits": 120,
+      "degree_type": "BBA",
+      "career_pathways": [
+        "Marketing Manager",
+        "Brand Manager",
+        "Digital Marketing Specialist",
+        "Market Research Analyst",
+        "Public Relations Specialist"
+      ]
+    },
+    {
+      "id": 56,
+      "major": "Mathematics - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Mathematics Teacher",
+        "Data Analyst",
+        "Financial Analyst",
+        "Operations Research Analyst",
+        "Quantitative Analyst"
+      ]
+    },
+    {
+      "id": 57,
+      "major": "Mathematics - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Mathematician",
+        "Actuary",
+        "Data Scientist",
+        "University Professor (requires PhD)",
+        "Quantitative Analyst (requires MS)"
+      ]
+    },
+    {
+      "id": 58,
+      "major": "Mathematics/Post-Baccalaureate Certificate in Teacher Education - BA",
+      "credits": 141,
+      "degree_type": "BA",
+      "career_pathways": [
+        "High School Math Teacher",
+        "Middle School Math Teacher",
+        "Math Tutor",
+        "Instructional Coordinator",
+        "Department Chair"
+      ]
+    },
+    {
+      "id": 59,
+      "major": "Mechanical Engineering - BS",
+      "credits": 125,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Mechanical Engineer",
+        "Design Engineer",
+        "Manufacturing Engineer",
+        "Robotics Engineer",
+        "HVAC Engineer"
+      ]
+    },
+    {
+      "id": 60,
+      "major": "Mechanical Engineering, Aerospace - BS",
+      "credits": 132,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Aerospace Engineer",
+        "Propulsion Engineer",
+        "Flight Test Engineer",
+        "Avionics Engineer",
+        "Spacecraft Engineer"
+      ]
+    },
+    {
+      "id": 61,
+      "major": "Medical Technology - BS",
+      "credits": "64-142",
+      "degree_type": "BS",
+      "career_pathways": [
+        "Medical Laboratory Scientist",
+        "Clinical Laboratory Technologist",
+        "Blood Bank Technologist",
+        "Molecular Diagnostics Technologist",
+        "Laboratory Manager"
+      ]
+    },
+    {
+      "id": 62,
+      "major": "Microbiology - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Laboratory Technician",
+        "Science Teacher",
+        "Research Assistant",
+        "Environmental Health Specialist",
+        "Science Communications Specialist"
+      ]
+    },
+    {
+      "id": 63,
+      "major": "Microbiology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Microbiologist",
+        "Virologist",
+        "Medical Doctor (requires MD/DO)",
+        "Pharmaceutical Scientist (requires PhD)",
+        "University Professor (requires PhD)"
+      ]
+    },
+    {
+      "id": 64,
+      "major": "Molecular Biosciences and Biotechnology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Biotechnology Researcher",
+        "Molecular Biologist",
+        "Genetic Engineer",
+        "Bioinformatics Scientist",
+        "Bioprocess Engineer"
+      ]
+    },
+    {
+      "id": 65,
+      "major": "Molecular Cell Biology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Cell Biologist",
+        "Molecular Biologist",
+        "Stem Cell Researcher",
+        "Genetic Counselor",
+        "Biomedical Scientist"
+      ]
+    },
+    {
+      "id": 66,
+      "major": "Music - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Music Teacher",
+        "Music Therapist",
+        "Arts Administrator",
+        "Music Director",
+        "Music Publisher"
+      ]
+    },
+    {
+      "id": 67,
+      "major": "Music - BMus",
+      "credits": 120,
+      "degree_type": "BMus",
+      "career_pathways": [
+        "Professional Musician",
+        "Composer",
+        "Conductor",
+        "Music Producer",
+        "Music Teacher"
+      ]
+    },
+    {
+      "id": 68,
+      "major": "Natural Resource and Environmental Management - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Natural Resource Manager",
+        "Wildlife Manager",
+        "Forest Manager",
+        "Environmental Consultant",
+        "Land Use Planner"
+      ]
+    },
+    {
+      "id": 69,
+      "major": "Nursing - BS",
+      "credits": "120-137",
+      "degree_type": "BS",
+      "career_pathways": [
+        "Registered Nurse",
+        "Nurse Practitioner",
+        "Emergency Room Nurse",
+        "Public Health Nurse",
+        "Nurse Educator"
+      ]
+    },
+    {
+      "id": 70,
+      "major": "Pacific Islands Studies - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Pacific Islands Researcher",
+        "Cultural Resource Manager",
+        "Museum Curator",
+        "Indigenous Rights Advocate",
+        "Cultural Tourism Specialist"
+      ]
+    },
+    {
+      "id": 71,
+      "major": "Philippine Language and Culture - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Filipino Language Teacher",
+        "Translator",
+        "Cultural Program Coordinator",
+        "Language Revitalization Specialist",
+        "Museum Educator"
+      ]
+    },
+    {
+      "id": 72,
+      "major": "Philosophy - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Philosophy Professor",
+        "Ethics Consultant",
+        "Policy Analyst",
+        "Medical Ethicist",
+        "Corporate Ethics Officer"
+      ]
+    },
+    {
+      "id": 73,
+      "major": "Physics - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Physics Teacher",
+        "Science Writer",
+        "Data Analyst",
+        "Patent Agent",
+        "Science Policy Analyst"
+      ]
+    },
+    {
+      "id": 74,
+      "major": "Physics - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Physicist",
+        "Medical Physicist",
+        "Astrophysicist",
+        "Geophysicist",
+        "Quantum Computing Scientist"
+      ]
+    },
+    {
+      "id": 75,
+      "major": "Piano Performance - BMus",
+      "credits": 120,
+      "degree_type": "BMus",
+      "career_pathways": [
+        "Concert Pianist",
+        "Piano Teacher",
+        "Accompanist",
+        "Chamber Musician",
+        "Music Director"
+      ]
+    },
+    {
+      "id": 76,
+      "major": "Plant and Environmental Protection Sciences - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Plant Pathologist",
+        "Entomologist",
+        "Pest Management Specialist",
+        "Agricultural Scientist",
+        "Agronomist"
+      ]
+    },
+    {
+      "id": 77,
+      "major": "Political Science - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Policy Analyst",
+        "Campaign Manager",
+        "Political Journalist",
+        "Lawyer (requires JD)",
+        "University Professor (requires PhD)"
+      ]
+    },
+    {
+      "id": 78,
+      "major": "Post-Baccalaureate Certificate in Secondary Education",
+      "credits": 36,
+      "degree_type": "Certificate",
+      "career_pathways": [
+        "High School Teacher",
+        "Middle School Teacher",
+        "Curriculum Developer",
+        "Instructional Coordinator",
+        "Education Consultant"
+      ]
+    },
+    {
+      "id": 79,
+      "major": "Post-Baccalaureate Certificate in Special Education - PBSPED",
+      "credits": "18-37",
+      "degree_type": "Certificate",
+      "career_pathways": [
+        "Special Education Teacher",
+        "Inclusion Specialist",
+        "Behavioral Specialist",
+        "Educational Diagnostician",
+        "IEP Coordinator"
+      ]
+    },
+    {
+      "id": 80,
+      "major": "Post-Baccalaureate Certificate in Teacher Education - Elementary Education",
+      "credits": "31-49",
+      "degree_type": "Certificate",
+      "career_pathways": [
+        "Elementary School Teacher",
+        "Reading Specialist",
+        "Elementary Education Coordinator",
+        "Curriculum Developer",
+        "Instructional Coach"
+      ]
+    },
+    {
+      "id": 81,
+      "major": "Psychology - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Case Manager",
+        "Clinical Psychologist (requires PhD/PsyD)",
+        "Marriage and Family Therapist (requires MS/MA)",
+        "Neuropsychologist (requires PhD)",
+        "Psychiatrist (requires MD/DO)"
+      ]
+    },
+    {
+      "id": 82,
+      "major": "Psychology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Clinical Psychologist",
+        "Counseling Psychologist",
+        "Industrial-Organizational Psychologist",
+        "Neuropsychologist",
+        "School Psychologist"
+      ]
+    },
+    {
+      "id": 83,
+      "major": "Public Health - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Public Health Educator",
+        "Community Health Worker",
+        "Epidemiologist",
+        "Environmental Health Specialist",
+        "Medical Doctor with Public Health focus (requires MD/MPH)"
+      ]
+    },
+    {
+      "id": 84,
+      "major": "Religious Traditions & Ancient Civilizations - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Religious Studies Teacher",
+        "Archaeologist",
+        "Interfaith Coordinator",
+        "Chaplain",
+        "Cultural Heritage Specialist"
+      ]
+    },
+    {
+      "id": 85,
+      "major": "Russian - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Russian Language Teacher",
+        "Translator",
+        "International Business Specialist",
+        "Foreign Service Officer",
+        "Cultural Liaison"
+      ]
+    },
+    {
+      "id": 86,
+      "major": "Second Language Studies - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "ESL Teacher",
+        "TESOL Specialist",
+        "Bilingual Education Teacher",
+        "Language Curriculum Developer",
+        "Language Program Coordinator"
+      ]
+    },
+    {
+      "id": 87,
+      "major": "Secondary Education - BEd",
+      "credits": "120-128",
+      "degree_type": "BEd",
+      "career_pathways": [
+        "High School Teacher",
+        "Middle School Teacher",
+        "Curriculum Specialist",
+        "Instructional Coordinator",
+        "Education Consultant"
+      ]
+    },
+    {
+      "id": 88,
+      "major": "Sociology - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Sociologist",
+        "Social Researcher",
+        "Community Organizer",
+        "Policy Analyst",
+        "Demographer"
+      ]
+    },
+    {
+      "id": 89,
+      "major": "Special Education - BEd",
+      "credits": 120,
+      "degree_type": "BEd",
+      "career_pathways": [
+        "Special Education Teacher",
+        "Inclusion Specialist",
+        "Behavioral Intervention Specialist",
+        "Educational Therapist",
+        "IEP Specialist"
+      ]
+    },
+    {
+      "id": 90,
+      "major": "Sustainability - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Sustainability Coordinator",
+        "Environmental Consultant",
+        "Corporate Sustainability Manager",
+        "Green Building Consultant",
+        "Climate Action Coordinator"
+      ]
+    },
+    {
+      "id": 91,
+      "major": "Theatre and Dance - BA/BFA",
+      "credits": 120,
+      "degree_type": "BA/BFA",
+      "career_pathways": [
+        "Actor",
+        "Dancer",
+        "Theatre Director",
+        "Stage Manager",
+        "Costume Designer"
+      ]
+    },
+    {
+      "id": 92,
+      "major": "Travel Industry Management - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Hotel Manager",
+        "Travel Agent",
+        "Tourism Manager",
+        "Event Coordinator",
+        "Resort Manager"
+      ]
+    },
+    {
+      "id": 93,
+      "major": "Tropical Agriculture and the Environment - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Agricultural Scientist",
+        "Tropical Crop Specialist",
+        "Agroecologist",
+        "Soil Scientist",
+        "Agricultural Economist"
+      ]
+    },
+    {
+      "id": 94,
+      "major": "Voice - BMus",
+      "credits": 120,
+      "degree_type": "BMus",
+      "career_pathways": [
+        "Opera Singer",
+        "Concert Vocalist",
+        "Voice Teacher",
+        "Choral Director",
+        "Session Singer"
+      ]
+    },
+    {
+      "id": 95,
+      "major": "Women, Gender, and Sexuality Studies - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Gender Equity Specialist",
+        "Diversity and Inclusion Officer",
+        "Social Justice Advocate",
+        "Policy Analyst",
+        "Community Organizer"
+      ]
+    },
+    {
+      "id": 96,
+      "major": "Zoology - BA",
+      "credits": 120,
+      "degree_type": "BA",
+      "career_pathways": [
+        "Zoology Teacher",
+        "Zoo Educator",
+        "Wildlife Educator",
+        "Animal Care Specialist",
+        "Park Naturalist"
+      ]
+    },
+    {
+      "id": 97,
+      "major": "Zoology - BS",
+      "credits": 120,
+      "degree_type": "BS",
+      "career_pathways": [
+        "Zoologist",
+        "Wildlife Biologist",
+        "Animal Behaviorist",
+        "Conservation Biologist",
+        "University Professor (requires PhD)"
+      ]
+    }
+  ]
+}

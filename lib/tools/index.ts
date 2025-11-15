@@ -8,3 +8,6 @@ export { getCampusInfo } from './get-campus-info';
 export { parsePrereqs } from './parse-prereqs';
 export { getDegreeProgram } from './get-degree-program';
 export { getPathway } from './get-pathway';
+export { getCareerRecommendations } from './get-career-recommendations';
+export { getMajorRecommendations } from './get-major-recommendations';
+export { saveProfile } from './save-profile';
