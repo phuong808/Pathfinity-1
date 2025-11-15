@@ -74,9 +74,18 @@ export async function seedDegreesAndMajors(db: any, cfg: SeedScope) {
         if (!degRow.length) continue;
         const linkExists = await db.select().from(majorDegree).where(and(eq(majorDegree.majorId, majorId), eq(majorDegree.degreeId, degRow[0].id))).limit(1);
         if (linkExists.length && !cfg.FORCE) continue;
-        if (linkExists.length && cfg.FORCE) continue;
         const defaults = degreeDefaults[code] || {};
-        await db.insert(majorDegree).values({ majorId, degreeId: degRow[0].id, requiredCredits: defaults.requiredCredits ?? null, typicalDuration: defaults.typicalDuration ?? null });
+        if (linkExists.length && cfg.FORCE) {
+          // Update the existing link with new values
+          await db.update(majorDegree)
+            .set({
+              requiredCredits: defaults.requiredCredits ?? null,
+              typicalDuration: defaults.typicalDuration ?? null
+            })
+            .where(and(eq(majorDegree.majorId, majorId), eq(majorDegree.degreeId, degRow[0].id)));
+        } else if (!linkExists.length) {
+          await db.insert(majorDegree).values({ majorId, degreeId: degRow[0].id, requiredCredits: defaults.requiredCredits ?? null, typicalDuration: defaults.typicalDuration ?? null });
+        }
         linksInserted++;
       }
     }
