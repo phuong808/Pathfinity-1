@@ -59,6 +59,10 @@ export async function seedDegreesAndMajors(db: any, cfg: SeedScope) {
       if (existingMajor.length && !cfg.FORCE) {
         majorId = existingMajor[0].id;
       } else if (existingMajor.length && cfg.FORCE) {
+        // Update the existing major with the latest data (e.g., title)
+        await db.update(major)
+          .set({ title: majorTitle })
+          .where(and(eq(major.campusId, def.id), eq(major.title, existingMajor[0].title)));
         majorId = existingMajor[0].id;
       } else {
         const [mRow] = await db.insert(major).values({ campusId: def.id, title: majorTitle }).returning();
