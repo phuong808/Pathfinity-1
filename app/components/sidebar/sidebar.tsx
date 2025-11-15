@@ -37,8 +37,8 @@ const data = {
             icon: BookOpen,
         },
     {
-      title: "Roadmap Viewer",
-      url: "/SavedRoadmaps",
+      title: "Roadmaps",
+      url: "/Roadmaps",
       icon: GraduationCap,
     },
         {
@@ -77,7 +77,7 @@ export function ChatSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
                     >
                       <button
                         type="button"
-                        onClick={() => router.push('/')}
+                        onClick={() => router.push('/Chat')}
                         className="flex items-center gap-2"
                       >
                         <Infinity className="h-5 w-5" />

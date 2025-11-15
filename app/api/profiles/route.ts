@@ -3,7 +3,34 @@ import { db } from "@/app/db"
 import { profile } from "@/app/db/schema"
 import { auth } from "@/lib/auth"
 import { generateRoadmapForProfile } from "@/app/db/actions"
-import { sql } from "drizzle-orm"
+import { sql, eq } from "drizzle-orm"
+
+/**
+ * GET - Fetch all profiles for the authenticated user
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const session = await auth.api.getSession({ headers: req.headers })
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const profiles = await db
+      .select()
+      .from(profile)
+      .where(eq(profile.userId, session.user.id))
+      .orderBy(profile.createdAt)
+
+    return NextResponse.json({ profiles }, { status: 200 })
+  } catch (error) {
+    console.error("Error fetching profiles:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch profiles" },
+      { status: 500 }
+    )
+  }
+}
 
 /**
  * Find the lowest available ID in the profiles table

@@ -136,7 +136,7 @@ export default function College({ form, setForm, colleges, majors, degrees }: Pr
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a college" />
             </SelectTrigger>
-            <SelectContent className="max-h-[10rem]">
+            <SelectContent>
               {campusList.filter((c) => c !== "Select...").map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
@@ -169,7 +169,7 @@ export default function College({ form, setForm, colleges, majors, degrees }: Pr
                   <SelectTrigger className="w-full" disabled={!form.college}>
                     <SelectValue placeholder={form.college ? "Select a major" : "Select a college first"} />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[10rem]">
+                  <SelectContent className="max-h-[20rem]">
                     {majorList.length > 0 ? (
                       majorList.map((m) => (
                         <SelectItem key={m} value={m}>
