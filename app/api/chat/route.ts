@@ -19,6 +19,7 @@ import {
     getDegrees,
     getCampusInfo,
     parsePrereqs,
+    retrieveContext,
 } from '@/lib/tools';
 
 const tools = {
@@ -29,6 +30,7 @@ const tools = {
     getDegrees,
     getCampusInfo,
     parsePrereqs,
+    retrieveContext,
 };
 
 export type ChatTools = InferUITools<typeof tools>;
@@ -60,6 +62,13 @@ CRITICAL RULES:
 6. If a tool fails or returns no results, provide a helpful fallback response
 7. Do not use emojis in responses
 8. Keep responses natural and conversational
+
+EMBEDDING RETRIEVAL (ALWAYS USE BEFORE ANSWERING ACADEMIC QUERIES):
+- For ANY academic / course / major / degree / campus / roadmap planning question: first call retrieveContext with the user's query (and campus if specified, else default UH Manoa)
+- Use ONLY ONE tool (retrieveContext) unless user explicitly requests a specific course code (then you may use getCourse instead of retrieveContext)
+- NEVER show raw similarity scores, thresholds, or internal context blocks to the user
+- Use retrieveContext.formatted for a brief summary if helpful, but synthesize your answer from retrieveContext.context internally
+- If retrieveContext.found is false, proceed with a general answer and offer more specific queries
 
 TOOL USAGE INSTRUCTIONS:
 
@@ -173,7 +182,7 @@ When the user asks for a semester-by-semester plan or roadmap, or after enough p
 6) Use realistic credit loads (12-16 in fall/spring; optional/short summer). If data is missing, use placeholders.
 7) Do not invent impossible course loads.
 `,
-            stopWhen: stepCountIs(2),
+            stopWhen: stepCountIs(3),
         });
 
         return result.toUIMessageStreamResponse({
