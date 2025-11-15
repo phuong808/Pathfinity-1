@@ -86,11 +86,13 @@ async function generateInterestsFromLLM(context: RequestBody): Promise<string[]>
 ${contextLines}${excludeSection}
 
 Requirements:
-- Interests should be specific and actionable (e.g., "Machine Learning", "Urban Planning", "Data Visualization")
-- Mix technical skills, domain areas, and related fields
-- Keep each interest 1-3 words
+- Use clear, simple language that a high school student would understand
+- Interests should be specific but accessible (e.g., "Building Apps", "City Planning", "Creating Charts and Graphs")
+- Avoid overly technical jargon - use everyday terms when possible
+- Mix practical activities, subject areas, and related fields
+- Keep each interest 2-4 words maximum
 - Focus on areas that would benefit someone pursuing this career
-- Include both foundational and emerging areas in the field
+- Include both fundamental concepts and exciting modern topics
 - Generate DIVERSE options to give the user fresh choices
 
 Return format: ["Interest 1", "Interest 2", "Interest 3"]`
@@ -99,7 +101,7 @@ Return format: ["Interest 1", "Interest 2", "Interest 3"]`
     const { text } = await generateText({
       model: openai('gpt-4o-mini'),
       prompt,
-      temperature: 0.8,
+      temperature: 0.7,
     })
 
     const newInterests = parseInterestsFromResponse(text, numToGenerate)

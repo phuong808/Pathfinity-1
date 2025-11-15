@@ -6,6 +6,21 @@ import { eq, desc } from 'drizzle-orm';
 import { generateId, UIMessage } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { generateAndSaveRoadmap } from '@/lib/roadmap-generator';
+
+/**
+ * Generate roadmap for a profile (wrapper for roadmap-generator)
+ */
+export async function generateRoadmapForProfile(profileId: number): Promise<void> {
+  try {
+    console.log(`Generating roadmap for profile ${profileId}...`);
+    await generateAndSaveRoadmap(profileId);
+    console.log(`Successfully generated roadmap for profile ${profileId}`);
+  } catch (error) {
+    console.error(`Failed to generate roadmap for profile ${profileId}:`, error);
+    throw error;
+  }
+}
 
 /**
  * Generate a chat title using AI based on the first user message

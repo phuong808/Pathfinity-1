@@ -89,11 +89,13 @@ async function generateSkillsFromLLM(context: RequestBody): Promise<string[]> {
 ${contextLines}${excludeSection}
 
 Requirements:
-- Skills should be specific and actionable (e.g., "Python Programming", "Data Analysis", "Project Management")
-- Mix technical skills, soft skills, and domain-specific competencies
-- Keep each skill 1-3 words
+- Use clear, simple language that a high school student would understand
+- Skills should be specific but accessible (e.g., "Coding in Python", "Analyzing Data", "Leading Teams")
+- Avoid overly technical jargon - use everyday terms when possible
+- Mix hands-on technical skills, people skills, and subject-specific abilities
+- Keep each skill 2-4 words maximum
 - Focus on skills that employers value for this career path
-- Include both foundational and specialized skills
+- Include both basic building-block skills and specialized abilities
 - Generate DIVERSE options to give the user fresh choices
 
 Return format: ["Skill 1", "Skill 2", "Skill 3"]`
@@ -102,7 +104,7 @@ Return format: ["Skill 1", "Skill 2", "Skill 3"]`
     const { text } = await generateText({
       model: openai('gpt-4o-mini'),
       prompt,
-      temperature: 0.8,
+      temperature: 0.7,
     })
 
     const newSkills = parseSkillsFromResponse(text, numToGenerate)

@@ -10,7 +10,7 @@ import Skills from "@/app/components/pathway/skills"
 import ProfilePreview from "@/app/components/profiles/profile-preview"
 import { Button } from "@/app/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/app/components/ui/alert"
-import { Check } from "lucide-react"
+import { Check, AlertTriangle } from "lucide-react"
 
 type FormData = {
   career: string
@@ -30,6 +30,7 @@ export default function CreatePathwayPage() {
   const [generatedSkills, setGeneratedSkills] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessAlert, setShowSuccessAlert] = useState(false)
+  const [showWarningAlert, setShowWarningAlert] = useState(false)
   const [form, setForm] = useState<FormData>({
     career: "",
     college: "",
@@ -75,13 +76,17 @@ export default function CreatePathwayPage() {
       const data = await response.json()
       console.log("Profile saved:", data)
 
-      // Show success alert
-      setShowSuccessAlert(true)
+      // Check if roadmap was generated successfully
+      if (data.hasRoadmap) {
+        setShowSuccessAlert(true)
+      } else {
+        setShowWarningAlert(true)
+      }
 
       // Redirect to roadmap page after a short delay
       setTimeout(() => {
         router.push("/Roadmap")
-      }, 2000)
+      }, 2500)
     } catch (error) {
       console.error("Error saving profile:", error)
       alert("Failed to save profile. Please try again.")
@@ -112,6 +117,19 @@ export default function CreatePathwayPage() {
               <AlertTitle className="text-green-800">Profile Created Successfully!</AlertTitle>
               <AlertDescription className="text-green-700">
                 Your pathway profile has been saved. Redirecting to roadmap...
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {/* Warning Alert */}
+        {showWarningAlert && (
+          <div className="absolute top-6 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2 px-4">
+            <Alert className="bg-yellow-50 border-yellow-600">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-800">Profile Saved with Warning</AlertTitle>
+              <AlertDescription className="text-yellow-700">
+                Your profile was created, but we couldn't generate a roadmap. This may be because your campus is not UH Manoa or we don't have a pathway template for your major.
               </AlertDescription>
             </Alert>
           </div>

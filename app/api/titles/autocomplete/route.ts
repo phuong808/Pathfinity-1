@@ -1,21 +1,24 @@
 import { NextResponse } from 'next/server'
-import { searchTitles } from '@/lib/lightcast-client'
+import onetOccupations from '@/app/db/data/onet-occupations.json'
 
 /**
- * Lightcast Titles Autocomplete API
+ * O*NET Titles Autocomplete API
  * 
- * Provides job title suggestions using Lightcast's titles taxonomy.
- * Results are cached for 1 hour to reduce API calls.
+ * Provides job title suggestions using local O*NET alternate titles JSON.
+ * Searches through all alternate titles and returns matching results with O*NET-SOC codes.
  * 
  * Query params:
  *   - q: search query (min 2 characters)
  * 
- * Returns: Array of { id, name, displayName }
+ * Returns: Array of { id: code, code, name: title, displayName: title }
  */
 
 // In-memory cache for autocomplete results
 const cache = new Map<string, { ts: number; data: any }>()
 const CACHE_TTL = 1000 * 60 * 30 // 30 minutes
+
+// Type the JSON import
+const occupationsMap = onetOccupations as Record<string, string>
 
 export async function GET(req: Request) {
   try {
@@ -36,22 +39,30 @@ export async function GET(req: Request) {
       return NextResponse.json(cached.data)
     }
 
-    // Fetch from Lightcast API
-    const titles = await searchTitles(query, 10)
+    // Search through the JSON for matching titles
+    const searchLower = query.toLowerCase()
+    const matches: Array<{ id: string; code: string; name: string; displayName: string }> = []
     
-    // Transform to consistent format for frontend
-    const results = titles.map(title => ({
-      id: title.id,
-      name: title.name,
-      displayName: title.name,
-    }))
-
+    for (const [title, code] of Object.entries(occupationsMap)) {
+      if (title.toLowerCase().includes(searchLower)) {
+        matches.push({
+          id: code,
+          code: code,
+          name: title,
+          displayName: title,
+        })
+        
+        // Limit results to 10
+        if (matches.length >= 10) break
+      }
+    }
+    
     // Cache the results
-    cache.set(cacheKey, { ts: Date.now(), data: results })
+    cache.set(cacheKey, { ts: Date.now(), data: matches })
 
-    return NextResponse.json(results)
+    return NextResponse.json(matches)
   } catch (error) {
-    console.error('Lightcast autocomplete error:', error)
+    console.error('O*NET autocomplete error:', error)
     
     return NextResponse.json({ 
       error: 'Failed to fetch title suggestions',
