@@ -1,16 +1,17 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { db } from '@/app/db/index';
-import { major as m, campus as cam, degree as d, majorDegree as md } from '@/app/db/schema';
-import { sql, eq } from 'drizzle-orm';
+import { degreeProgram as dp, campus as cam, degree as d } from '@/app/db/schema';
+import { sql, eq, ilike, and } from 'drizzle-orm';
 import { normalizeHawaiian } from '@/lib/normalize-hawaiian';
 
 // Lightweight table existence check to handle environments where migrations haven't run.
-async function ensureMajorsTable(): Promise<boolean> {
+async function ensureProgramsTable(): Promise<boolean> {
     try {
-        // Query pg_catalog to see if the majors table exists
-        const rows = await db.execute(sql`SELECT to_regclass('public.majors') AS reg`);
-        const first: any = Array.isArray(rows) ? rows[0] : (rows as any).rows?.[0];
+        // Query pg_catalog to see if the degree_programs table exists
+        const rows = await db.execute(sql`SELECT to_regclass('public.degree_programs') AS reg`);
+        const rowsArray = (rows as { rows?: unknown[] }).rows || (Array.isArray(rows) ? rows : []);
+        const first = rowsArray[0] as Record<string, unknown> | undefined;
         if (!first) return false;
         const value = first.reg ?? first.to_regclass; // fallback variations
         return value !== null;
@@ -26,16 +27,16 @@ export const getMajorDetails = tool({
         campus: z.string().optional().describe("Campus name if known"),
     }),
     execute: async ({ majorName, campus }) => {
-        // Guard: verify majors table exists to avoid confusing "relation does not exist" errors.
-        const hasMajors = await ensureMajorsTable();
-        if (!hasMajors) {
+        // Guard: verify degree_programs table exists to avoid confusing "relation does not exist" errors.
+        const hasPrograms = await ensureProgramsTable();
+        if (!hasPrograms) {
             return {
                 found: false,
                 message: 'Major details are not available yet in this environment. You can still ask me to draft a basic roadmap based on general knowledge.',
             };
         }
         try {
-            const conditions = [sql`${m.title} ILIKE ${`%${majorName}%`}`];
+            const conditions = [ilike(dp.majorTitle, `%${majorName}%`)];
             if (campus) {
                 // Normalize Hawaiian characters for matching + check aliases
                 conditions.push(sql`(
@@ -46,18 +47,20 @@ export const getMajorDetails = tool({
 
             const result = await db
                 .select({
-                    majorTitle: m.title,
+                    majorTitle: dp.majorTitle,
+                    programName: dp.programName,
+                    track: dp.track,
                     campusName: cam.name,
                     degreeCode: d.code,
                     degreeName: d.name,
-                    credits: md.requiredCredits,
-                    duration: md.typicalDuration,
+                    credits: dp.totalCredits,
+                    duration: dp.typicalDurationYears,
+                    description: dp.description,
                 })
-                .from(m)
-                .leftJoin(cam, eq(m.campusId, cam.id))
-                .leftJoin(md, eq(md.majorId, m.id))
-                .leftJoin(d, eq(md.degreeId, d.id))
-                .where(sql`${sql.join(conditions, sql` AND `)}`)
+                .from(dp)
+                .leftJoin(cam, eq(dp.campusId, cam.id))
+                .leftJoin(d, eq(dp.degreeId, d.id))
+                .where(and(...conditions))
                 .limit(10);
 
             if (!result?.length) {
@@ -71,15 +74,21 @@ export const getMajorDetails = tool({
             const lines = [
                 `**${major.majorTitle}**`,
                 major.campusName && `📍 ${major.campusName}`,
+                major.description && `\n${major.description}`,
                 ''
             ];
 
-            const degrees = result.filter(r => r.degreeCode);
-            if (degrees.length) {
-                lines.push(`**Degrees Offered (${degrees.length}):**`);
-                degrees.forEach(deg => {
-                    const years = deg.duration ? (deg.duration / 12).toFixed(1) : '?';
+            // Group by unique degree codes
+            const uniqueDegrees = Array.from(
+                new Map(result.filter(r => r.degreeCode).map(r => [r.degreeCode, r])).values()
+            );
+
+            if (uniqueDegrees.length) {
+                lines.push(`**Degrees Offered (${uniqueDegrees.length}):**`);
+                uniqueDegrees.forEach(deg => {
+                    const years = deg.duration ? deg.duration.toString() : '?';
                     lines.push(`  • **${deg.degreeCode}** - ${deg.degreeName || deg.degreeCode}`);
+                    if (deg.track) lines.push(`    Track: ${deg.track}`);
                     if (deg.credits) lines.push(`    ${deg.credits} credits, ~${years} years`);
                 });
             } else {
@@ -90,10 +99,10 @@ export const getMajorDetails = tool({
                 found: true,
                 formatted: lines.filter(Boolean).join('\n'),
             };
-        } catch (error: any) {
+        } catch (error) {
             // If the error still leaks a missing relation, surface a clearer message.
-            const msg = String(error?.message || '');
-            if (/relation.*majors.*does not exist/i.test(msg)) {
+            const msg = String((error as Error)?.message || '');
+            if (/relation.*degree_programs.*does not exist/i.test(msg)) {
                 return {
                     found: false,
                     message: 'Major details are unavailable right now (database not migrated). I can still provide a general overview or create a basic roadmap.'

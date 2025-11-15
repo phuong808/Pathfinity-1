@@ -19,7 +19,10 @@ import {
     getDegrees,
     getCampusInfo,
     parsePrereqs,
+    getDegreeProgram,
+    getPathway,
 } from '@/lib/tools';
+import { buildRagContext } from '@/lib/rag-context';
 
 const tools = {
     getCourse,
@@ -29,6 +32,8 @@ const tools = {
     getDegrees,
     getCampusInfo,
     parsePrereqs,
+    getDegreeProgram,
+    getPathway,
 };
 
 export type ChatTools = InferUITools<typeof tools>;
@@ -42,14 +47,68 @@ export async function POST(req: Request) {
         const allMessages = message ? [...previousMessages, message] : previousMessages;
         const messages = await validateUIMessages({
             messages: allMessages,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             tools: tools as any,
         });
+
+        // Build RAG context from user's latest message using semantic search on embeddings
+        let ragContext = '';
+        if (message) {
+            try {
+                // Extract text content from the message
+                let userQuery = '';
+                if (typeof message === 'string') {
+                    userQuery = message;
+                } else if (message && typeof message === 'object') {
+                    // UIMessage structure - look for text in content array
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const msgObj = message as any;
+                    if (msgObj.content) {
+                        if (typeof msgObj.content === 'string') {
+                            userQuery = msgObj.content;
+                        } else if (Array.isArray(msgObj.content)) {
+                            // Content might be an array of parts
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const textParts = msgObj.content.filter((part: any) => part.type === 'text');
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            userQuery = textParts.map((part: any) => part.text).join(' ');
+                        }
+                    }
+                }
+
+                if (userQuery) {
+                    const context = await buildRagContext(userQuery, {
+                        includeCourses: true,
+                        includePrograms: true,
+                        limit: 5,
+                    });
+                    ragContext = context.contextSummary;
+                    console.log('🔍 RAG Context Generated for query:', userQuery.substring(0, 50));
+                    console.log('📊 Context length:', ragContext.length, 'chars');
+                    console.log('📚 Programs found:', context.relevantPrograms.length);
+                    console.log('📖 Courses found:', context.relevantCourses.length);
+                }
+            } catch (error) {
+                console.error('Error building RAG context:', error);
+                // Continue without RAG context if it fails
+            }
+        }
+
+        const baseSystemPrompt = `You are an academic advisor assistant for the University of Hawaii system. You have access to comprehensive information about ALL courses and degree programs across the entire UH system through a powerful database.`;
+
+        const ragContextSection = ragContext ? `
+
+RELEVANT CONTEXT FROM DATABASE (based on semantic search of embeddings):
+${ragContext}
+
+Use this context to inform your responses, but always verify with tools when providing specific information.
+` : '';
 
         const result = streamText({
             model: openai('gpt-4o-mini'),
             messages: convertToModelMessages(messages),
             tools,
-            system: `You are an academic advisor assistant for the University of Hawaii system. Help students find courses, majors, campuses, and degree information.
+            system: baseSystemPrompt + ragContextSection + `
 
 CRITICAL RULES:
 1. ALWAYS respond to every user message, including greetings ("hi", "hello", "hey", "bro")
@@ -61,9 +120,11 @@ CRITICAL RULES:
 7. Do not use emojis in responses
 8. Keep responses natural and conversational
 
-TOOL USAGE INSTRUCTIONS:
+AVAILABLE TOOLS & USAGE:
 
-All tools now return structured objects with these fields:
+**CRITICAL: For ANY query about majors, programs, or degrees, ALWAYS use getDegreeProgram tool first!**
+
+All tools return structured objects with:
 - found: boolean (whether results were found)
 - formatted: string (pre-formatted text to display)
 - message: string (error/help message if found is false)
@@ -72,7 +133,23 @@ All tools now return structured objects with these fields:
 ALWAYS check the 'found' field first:
 - If found is true: display the 'formatted' field
 - If found is false: display the 'message' field
-- Never say "the tool returned" or mention technical details
+- Never mention technical details
+
+**PRIMARY TOOLS FOR DEGREE PROGRAMS:**
+
+For DEGREE PROGRAM queries:
+- Search programs: use getDegreeProgram with query, campus, and/or degreeType
+  - Finds degree programs by major name, degree type (BA, BS, AA, etc.), or campus
+  - Returns program details: credits, duration, tracks available
+  - Example: "Show me Computer Science programs" → getDegreeProgram with query="Computer Science"
+  - Example: "What BS degrees at UH Manoa" → getDegreeProgram with campus="UH Manoa", degreeType="BS"
+- Get pathway/roadmap: use getPathway with programId from getDegreeProgram results
+  - Shows complete semester-by-semester course plan
+  - Displays all courses organized by year and semester
+  - Use when user wants "roadmap", "plan", or "pathway" for a specific program
+  - Always call getDegreeProgram first to get the programId
+
+**COURSE QUERIES:**
 
 For CAMPUS queries:
 - List all campuses: use getCampuses, display result.formatted if found
@@ -102,18 +179,33 @@ For PREREQUISITE queries:
 - If getCourse didn't return metadata, say "I don't have prerequisite information for this course."
 
 For MAJOR queries:
-- Search or list majors: use getMajor with optional keyword and/or campus
-  - If found: display result.formatted
-  - If not found: display result.message
-- Detailed major info: use getMajorDetails for specific major
+- **ALWAYS use getDegreeProgram** for searching majors/programs/degrees
+  - This is the PRIMARY tool for all major/program/degree queries
+  - Example: "computer science at uh manoa" → getDegreeProgram with query="computer science", campus="uh manoa"
+  - Example: "what majors are available" → getDegreeProgram with no parameters (shows all)
+- Use getMajorDetails for detailed information about a specific major
+- getMajor is deprecated - use getDegreeProgram instead
 - Keep major descriptions clear and helpful
-- After listing majors, offer to provide more details about specific ones
+- After listing majors, offer to provide more details or show pathways
 
 For DEGREE queries:
 - List degree types: use getDegrees with optional level filter
   - If found: display result.formatted
   - If not found: display result.message
 - Explain differences between degree levels naturally
+
+**INTELLIGENT WORKFLOW:**
+
+When users ask about "what to study" or "career path":
+1. Use getDegreeProgram to show relevant programs
+2. Then use getPathway to show the detailed semester plan
+3. Explain requirements naturally using the formatted output
+
+When users ask about specific majors:
+1. Use getDegreeProgram to find the program
+2. Display program details (credits, duration, campus)
+3. Offer to show the full pathway with getPathway
+4. If they accept, call getPathway with the programId
 
 ERROR HANDLING:
 - If any tool returns found: false, display the message field exactly
@@ -134,7 +226,7 @@ CONVERSATION FLOW:
 - Follow-ups: Suggest related searches naturally
 - Course details: If they ask about a course, provide the info without making them ask twice
 - Prerequisites: Proactively offer prerequisite info when showing course details if they might need it
--- Stay focused: Answer what they asked, then briefly suggest next steps
+- Stay focused: Answer what they asked, then briefly suggest next steps
 
 Key Rules:
 - ONE tool per response

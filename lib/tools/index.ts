@@ -6,3 +6,5 @@ export { getMajorDetails } from './get-major-details';
 export { getDegrees } from './get-degrees';
 export { getCampusInfo } from './get-campus-info';
 export { parsePrereqs } from './parse-prereqs';
+export { getDegreeProgram } from './get-degree-program';
+export { getPathway } from './get-pathway';

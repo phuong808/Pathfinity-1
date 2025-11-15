@@ -1,0 +1,303 @@
+/**
+ * RAG Context Builder
+ * Builds rich context from the database for the chatbot using semantic search
+ */
+
+import { semanticSearch } from './semantic-search';
+import { db } from '@/app/db/index';
+import { 
+  course, 
+  degreeProgram,
+  degreePathway,
+  campus,
+  degree
+} from '@/app/db/schema';
+import { eq, like, or, and } from 'drizzle-orm';
+
+interface RagContext {
+  relevantCourses: Array<{
+    code: string;
+    title: string;
+    description: string;
+    campus: string;
+    credits: string;
+  }>;
+  relevantPrograms: Array<{
+    programName: string;
+    majorTitle: string;
+    degreeCode: string;
+    campus: string;
+    totalCredits: number | null;
+  }>;
+  relevantPathways: Array<{
+    programName: string;
+    semesterCount: number;
+    totalCredits: number | null;
+  }>;
+  contextSummary: string;
+}
+
+/**
+ * Build comprehensive context from user query for RAG
+ */
+export async function buildRagContext(
+  userQuery: string,
+  options: {
+    includeCourses?: boolean;
+    includePrograms?: boolean;
+    limit?: number;
+  } = {}
+): Promise<RagContext> {
+  const {
+    includeCourses = true,
+    includePrograms = true,
+    limit = 5,
+  } = options;
+
+  const context: RagContext = {
+    relevantCourses: [],
+    relevantPrograms: [],
+    relevantPathways: [],
+    contextSummary: '',
+  };
+
+  try {
+    // Use semantic search to find relevant information
+    const searchResults = await semanticSearch(userQuery, limit * 2, 0.3);
+
+    // Process search results
+    for (const result of searchResults) {
+      // Course-related results (when coursePrefix and courseNumber are present)
+      if (result.coursePrefix && result.courseNumber && includeCourses && context.relevantCourses.length < limit) {
+        context.relevantCourses.push({
+          code: `${result.coursePrefix} ${result.courseNumber}`,
+          title: result.courseTitle || 'Untitled',
+          description: result.courseDesc || '',
+          campus: result.campusName || '',
+          credits: result.numUnits || 'N/A',
+        });
+      }
+
+      // Program-related results from metadata
+      if (result.content && includePrograms) {
+        const metadata = result.content as Record<string, unknown>;
+        if (metadata?.programId && context.relevantPrograms.length < limit) {
+          // Fetch program details
+          const programId = metadata.programId as number;
+          const [programDetails] = await db
+            .select({
+              programName: degreeProgram.programName,
+              majorTitle: degreeProgram.majorTitle,
+              totalCredits: degreeProgram.totalCredits,
+              degreeCode: degree.code,
+              campusName: campus.name,
+            })
+            .from(degreeProgram)
+            .leftJoin(degree, eq(degreeProgram.degreeId, degree.id))
+            .leftJoin(campus, eq(degreeProgram.campusId, campus.id))
+            .where(eq(degreeProgram.id, programId))
+            .limit(1);
+
+          if (programDetails) {
+            context.relevantPrograms.push({
+              programName: programDetails.programName,
+              majorTitle: programDetails.majorTitle || '',
+              degreeCode: programDetails.degreeCode || '',
+              campus: programDetails.campusName || '',
+              totalCredits: programDetails.totalCredits,
+            });
+          }
+        }
+      }
+    }
+
+    // Build context summary
+    const summaryParts: string[] = [];
+
+    if (context.relevantCourses.length > 0) {
+      summaryParts.push(
+        `Relevant Courses (${context.relevantCourses.length}):\n` +
+        context.relevantCourses
+          .map(c => `- ${c.code}: ${c.title} (${c.credits} cr) @ ${c.campus}`)
+          .join('\n')
+      );
+    }
+
+    if (context.relevantPrograms.length > 0) {
+      summaryParts.push(
+        `Relevant Degree Programs (${context.relevantPrograms.length}):\n` +
+        context.relevantPrograms
+          .map(p => `- ${p.majorTitle} (${p.degreeCode}) @ ${p.campus}`)
+          .join('\n')
+      );
+    }
+
+    context.contextSummary = summaryParts.join('\n\n');
+
+  } catch (error) {
+    console.error('Error building RAG context:', error);
+    // Return empty context on error
+  }
+
+  return context;
+}
+
+/**
+ * Get detailed course information with prerequisites
+ */
+export async function getCourseContext(courseCode: string, campusId?: string) {
+  const match = courseCode.trim().match(/^([A-Z]+)\s*(\d+[A-Z]*)$/i);
+  if (!match) return null;
+
+  const [, prefix, number] = match;
+
+  const conditions = [
+    eq(course.coursePrefix, prefix.toUpperCase()),
+    eq(course.courseNumber, number.toUpperCase()),
+  ];
+
+  if (campusId) {
+    conditions.push(eq(course.campusId, campusId));
+  }
+
+  const [result] = await db
+    .select({
+      id: course.id,
+      prefix: course.coursePrefix,
+      number: course.courseNumber,
+      title: course.courseTitle,
+      description: course.courseDesc,
+      credits: course.numUnits,
+      department: course.deptName,
+      metadata: course.metadata,
+      campusName: campus.name,
+    })
+    .from(course)
+    .leftJoin(campus, eq(course.campusId, campus.id))
+    .where(and(...conditions))
+    .limit(1);
+
+  return result;
+}
+
+/**
+ * Get degree program with pathway summary
+ */
+export async function getProgramContext(programId: number) {
+  const [program] = await db
+    .select({
+      id: degreeProgram.id,
+      programName: degreeProgram.programName,
+      majorTitle: degreeProgram.majorTitle,
+      track: degreeProgram.track,
+      totalCredits: degreeProgram.totalCredits,
+      typicalDuration: degreeProgram.typicalDurationYears,
+      description: degreeProgram.description,
+      degreeCode: degree.code,
+      degreeName: degree.name,
+      degreeLevel: degree.level,
+      campusName: campus.name,
+    })
+    .from(degreeProgram)
+    .leftJoin(degree, eq(degreeProgram.degreeId, degree.id))
+    .leftJoin(campus, eq(degreeProgram.campusId, campus.id))
+    .where(eq(degreeProgram.id, programId))
+    .limit(1);
+
+  if (!program) return null;
+
+  // Get pathway summary
+  const pathways = await db
+    .select({
+      yearNumber: degreePathway.yearNumber,
+      semesterName: degreePathway.semesterName,
+      semesterCredits: degreePathway.semesterCredits,
+    })
+    .from(degreePathway)
+    .where(eq(degreePathway.degreeProgramId, programId))
+    .orderBy(degreePathway.sequenceOrder);
+
+  return {
+    ...program,
+    semesterCount: pathways.length,
+    pathwayYears: pathways.length > 0 ? Math.max(...pathways.map(p => p.yearNumber)) : 0,
+  };
+}
+
+/**
+ * Search for related courses by keywords
+ */
+export async function findRelatedCourses(
+  keywords: string[],
+  campusId?: string,
+  limit: number = 10
+) {
+  const searchConditions = keywords.map(keyword => 
+    or(
+      like(course.courseTitle, `%${keyword}%`),
+      like(course.courseDesc, `%${keyword}%`),
+      like(course.coursePrefix, `%${keyword}%`)
+    )
+  );
+
+  const conditions = [or(...searchConditions)];
+  if (campusId) {
+    conditions.push(eq(course.campusId, campusId));
+  }
+
+  const results = await db
+    .select({
+      prefix: course.coursePrefix,
+      number: course.courseNumber,
+      title: course.courseTitle,
+      description: course.courseDesc,
+      credits: course.numUnits,
+      campusName: campus.name,
+    })
+    .from(course)
+    .leftJoin(campus, eq(course.campusId, campus.id))
+    .where(and(...conditions))
+    .limit(limit);
+
+  return results;
+}
+
+/**
+ * Get comprehensive context for answering complex queries
+ */
+export async function getComprehensiveContext(userQuery: string) {
+  const context = await buildRagContext(userQuery, {
+    includeCourses: true,
+    includePrograms: true,
+    limit: 8,
+  });
+
+  // Extract keywords for additional searches
+  const keywords = userQuery
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(word => word.length > 3)
+    .filter(word => !['what', 'when', 'where', 'which', 'about', 'tell', 'show'].includes(word));
+
+  // If we have specific subject keywords, do additional course search
+  if (keywords.length > 0 && context.relevantCourses.length < 5) {
+    const additionalCourses = await findRelatedCourses(keywords.slice(0, 3), undefined, 5);
+    for (const c of additionalCourses) {
+      if (context.relevantCourses.length >= 8) break;
+      const alreadyAdded = context.relevantCourses.some(
+        existing => existing.code === `${c.prefix} ${c.number}`
+      );
+      if (!alreadyAdded) {
+        context.relevantCourses.push({
+          code: `${c.prefix} ${c.number}`,
+          title: c.title || 'Untitled',
+          description: c.description || '',
+          campus: c.campusName || '',
+          credits: c.credits || 'N/A',
+        });
+      }
+    }
+  }
+
+  return context;
+}

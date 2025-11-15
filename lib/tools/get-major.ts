@@ -1,15 +1,16 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { db } from '@/app/db/index';
-import { major as m, campus as cam } from '@/app/db/schema';
-import { sql, eq } from 'drizzle-orm';
+import { degreeProgram as dp, campus as cam, degree as d } from '@/app/db/schema';
+import { sql, eq, ilike, or, and } from 'drizzle-orm';
 import { normalizeHawaiian } from '@/lib/normalize-hawaiian';
 
 async function tablesReady(): Promise<boolean> {
     try {
-        const res = await db.execute(sql`SELECT to_regclass('public.majors') AS majors, to_regclass('public.campuses') AS campuses`);
-        const first: any = Array.isArray(res) ? res[0] : (res as any).rows?.[0];
-        return !!(first?.majors && first?.campuses);
+        const res = await db.execute(sql`SELECT to_regclass('public.degree_programs') AS degree_programs, to_regclass('public.campuses') AS campuses`);
+        const rows = (res as { rows?: unknown[] }).rows || (Array.isArray(res) ? res : []);
+        const first = rows[0] as Record<string, unknown> | undefined;
+        return !!(first?.degree_programs && first?.campuses);
     } catch {
         return false;
     }
@@ -24,6 +25,8 @@ export const getMajor = tool({
     }),
     execute: async ({ query, campus, limit = 30 }) => {
         try {
+            console.log('⚠️  OLD getMajor tool called (should use getDegreeProgram instead!):', { query, campus, limit });
+            
             // Gracefully handle environments where tables haven't been created yet
             const ready = await tablesReady();
             if (!ready) {
@@ -35,27 +38,40 @@ export const getMajor = tool({
 
             const conditions = [];
             if (query?.trim()) {
-                conditions.push(sql`${m.title} ILIKE ${`%${query}%`}`);
+                conditions.push(or(
+                    ilike(dp.majorTitle, `%${query}%`),
+                    ilike(dp.programName, `%${query}%`)
+                ));
             }
             if (campus) {
                 // Normalize Hawaiian characters for matching (ā→a, ʻ removed, etc.)
-                // Also check aliases field which includes common abbreviations like "UH Manoa"
+                // Split input into terms for flexible matching (e.g., "UH Manoa" -> ["uh", "manoa"])
+                const normalizedInput = normalizeHawaiian(campus).toLowerCase();
+                const campusTerms = normalizedInput.split(/\s+/).filter(t => t.length > 2);
+                
+                const campusConditions = campusTerms.map(term => 
+                    sql`translate(LOWER(${cam.name}), 'āēīōūʻ''''', 'aeiou') LIKE ${`%${term}%`}`
+                );
+                
                 conditions.push(sql`(
-                    translate(LOWER(${cam.name}), 'āēīōūʻ''''', 'aeiou') LIKE ${`%${normalizeHawaiian(campus)}%`} OR
-                    ${cam.aliases}::text ILIKE ${`%${campus}%`}
+                    ${sql.join(campusConditions, sql` OR `)} OR
+                    ${cam.aliases}::text ILIKE ${`%${campus}%`} OR
+                    ${cam.id} ILIKE ${`%${normalizedInput}%`}
                 )`);
             }
 
             const majors = await db
                 .select({
-                    id: m.id,
-                    title: m.title,
+                    id: dp.id,
+                    title: dp.majorTitle,
                     campus: cam.name,
+                    degreeCode: d.code,
                 })
-                .from(m)
-                .leftJoin(cam, eq(m.campusId, cam.id))
-                .where(conditions.length ? sql`${sql.join(conditions, sql` AND `)}` : undefined)
-                .orderBy(m.title)
+                .from(dp)
+                .leftJoin(cam, eq(dp.campusId, cam.id))
+                .leftJoin(d, eq(dp.degreeId, d.id))
+                .where(conditions.length ? and(...conditions) : undefined)
+                .orderBy(dp.majorTitle)
                 .limit(limit);
 
             if (!majors?.length) {
@@ -66,7 +82,7 @@ export const getMajor = tool({
             }
 
             const list = majors.map((m, i) => 
-                `${i + 1}. **${m.title}**${m.campus ? ` @ ${m.campus}` : ''}`
+                `${i + 1}. **${m.title}**${m.campus ? ` @ ${m.campus}` : ''}${m.degreeCode ? ` (${m.degreeCode})` : ''}`
             ).join('\n');
 
             return {
