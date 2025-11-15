@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "cleanup-duplicates": "tsx scripts/run-cleanup.ts",
-    "ingest-pathways": "tsx scripts/ingest/ingest-pathways.ts"
+    "seed:uh": "tsx scripts/seed/seed-uh.ts",
+    "seed:manoa": "tsx scripts/seed/seed-manoa.ts",
+    "seed:courses-all": "tsx scripts/seed/seed-courses-all.ts",
+    "seed:degrees": "tsx scripts/seed/seed-degrees-majors.ts",
+    "seed:pathways": "tsx scripts/seed/seed-pathways.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.58",

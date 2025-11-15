@@ -182,7 +182,7 @@ When the user asks for a semester-by-semester plan or roadmap, or after enough p
 6) Use realistic credit loads (12-16 in fall/spring; optional/short summer). If data is missing, use placeholders.
 7) Do not invent impossible course loads.
 `,
-            stopWhen: stepCountIs(2),
+            stopWhen: stepCountIs(3),
         });
 
         return result.toUIMessageStreamResponse({
