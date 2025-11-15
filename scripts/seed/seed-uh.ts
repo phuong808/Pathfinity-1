@@ -90,7 +90,7 @@ async function summary() {
   console.log(`Phases: degreesMajors=${CONFIG.DO_DEGREES_MAJORS}, courses=${CONFIG.DO_COURSES}, pathways=${CONFIG.DO_PATHWAYS}`);
 
   // Ensure campuses present for any campus with data files
-  for (const [prefix, def] of Object.entries(campusesMap)) {
+  for (const def of Object.values(campusesMap)) {
     await ensureCampus(db as any, def);
   }
 
