@@ -48,7 +48,7 @@ export async function seedDegreesAndMajors(db: any, cfg: SeedScope) {
 
   let majorsInserted = 0; let linksInserted = 0; let campusesProcessed = 0;
   const entries = Object.entries(campusesMap).filter(([prefix]) => !cfg.ONLY_CAMPUSES?.length || cfg.ONLY_CAMPUSES.includes(prefix));
-  for (const [prefix, def] of entries) {
+  for (const [, def] of entries) {
     const majorsKey = def.majorsKey;
     if (!majorsKey || !raw[majorsKey]) { continue; }
     await ensureCampus(db, def);
