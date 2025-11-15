@@ -1,80 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Import all course data at the top level for reliable access
-import manoaCoursesData from '@/app/db/data/manoa_courses.json';
-import hiloCoursesData from '@/app/db/data/hilo_courses.json';
-import westoahuCoursesData from '@/app/db/data/west_oahu_courses.json';
-import honoluluccCoursesData from '@/app/db/data/honolulucc_courses.json';
-import kapiolaniCoursesData from '@/app/db/data/kapiolani_courses.json';
-import kauaiCoursesData from '@/app/db/data/kauai_courses.json';
-import leewardCoursesData from '@/app/db/data/leeward_courses.json';
-import windwardCoursesData from '@/app/db/data/windward_courses.json';
-import mauiCoursesData from '@/app/db/data/maui_courses.json';
-import hawaiiccCoursesData from '@/app/db/data/hawaiicc_courses.json';
-import pcattCoursesData from '@/app/db/data/pcatt_courses.json';
+import { getCoursesByCampus, getCoursesByDepartment } from '@/app/db/queries';
 
 interface CourseCatalog {
-  course_prefix: string;
-  course_number: string;
-  course_title: string;
-  course_desc: string;
-  num_units: string;
-  dept_name: string;
-  inst_ipeds: number;
-  metadata: string;
+  id: number;
+  campusId: string;
+  coursePrefix: string;
+  courseNumber: string;
+  courseTitle: string | null;
+  courseDesc: string | null;
+  numUnits: string | null;
+  deptName: string | null;
+  metadata: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Map campus IDs to their course data
-const CAMPUS_COURSE_DATA: Record<string, CourseCatalog[]> = {
-  'manoa': manoaCoursesData as CourseCatalog[],
-  'hilo': hiloCoursesData as CourseCatalog[],
-  'westoahu': westoahuCoursesData as CourseCatalog[],
-  'honolulucc': honoluluccCoursesData as CourseCatalog[],
-  'kapiolani': kapiolaniCoursesData as CourseCatalog[],
-  'kauai': kauaiCoursesData as CourseCatalog[],
-  'leeward': leewardCoursesData as CourseCatalog[],
-  'windward': windwardCoursesData as CourseCatalog[],
-  'maui': mauiCoursesData as CourseCatalog[],
-  'hawaiicc': hawaiiccCoursesData as CourseCatalog[],
-  'pcatt': pcattCoursesData as CourseCatalog[],
-};
+// Cache for courses by campus and department
+const coursesCache = new Map<string, { data: ReturnType<typeof transformCourse>[], timestamp: number }>();
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
-// Cache for sorted courses by campus
-const coursesCache = new Map<string, CourseCatalog[]>();
-
-// Optimized sort function for courses
-function sortCourses(courses: CourseCatalog[]): CourseCatalog[] {
-  return courses.sort((a, b) => {
-    // First sort by course prefix alphabetically
-    const prefixCompare = a.course_prefix.localeCompare(b.course_prefix);
-    if (prefixCompare !== 0) return prefixCompare;
-    
-    // Then sort by course number numerically (lowest to highest)
-    const numA = parseInt(a.course_number, 10);
-    const numB = parseInt(b.course_number, 10);
-    return numA - numB;
-  });
-}
-
-// Load and cache courses for a campus
-function getCachedCourses(campus: string): CourseCatalog[] {
-  // Check cache first
-  if (coursesCache.has(campus)) {
-    return coursesCache.get(campus)!;
-  }
-
-  const courses = CAMPUS_COURSE_DATA[campus];
-  if (!courses) {
-    throw new Error('Invalid campus ID');
-  }
-
-  // Sort courses
-  const sortedCourses = sortCourses([...courses]); // Create a copy before sorting
-
-  // Cache the sorted courses
-  coursesCache.set(campus, sortedCourses);
-
-  return sortedCourses;
+// Transform database course format to match the expected API format
+function transformCourse(course: CourseCatalog) {
+  return {
+    course_prefix: course.coursePrefix,
+    course_number: course.courseNumber,
+    course_title: course.courseTitle || '',
+    course_desc: course.courseDesc || '',
+    num_units: course.numUnits || '',
+    dept_name: course.deptName || '',
+    metadata: course.metadata || '',
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -90,24 +45,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!CAMPUS_COURSE_DATA[campus]) {
-      return NextResponse.json(
-        { error: 'Invalid campus ID' },
-        { status: 400 }
-      );
-    }
+    const cacheKey = `${campus}:${department || 'all'}`;
 
-    // Get cached sorted courses for the specific campus
-    const sortedCourses = getCachedCourses(campus);
-
-    // If department is specified, filter by department
-    if (department) {
-      const departmentCourses = sortedCourses.filter(
-        (course) => course.dept_name === department
-      );
-      
+    // Check cache first
+    const cached = coursesCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       return NextResponse.json(
-        { courses: departmentCourses },
+        { courses: cached.data },
         {
           headers: {
             'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
@@ -116,9 +60,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Otherwise return all courses
+    // Get courses from database
+    let courses;
+    if (department) {
+      courses = await getCoursesByDepartment(campus, department);
+    } else {
+      courses = await getCoursesByCampus(campus);
+    }
+
+    // Transform to expected format
+    const transformedCourses = courses.map(transformCourse);
+
+    // Update cache
+    coursesCache.set(cacheKey, { data: transformedCourses, timestamp: Date.now() });
+
     return NextResponse.json(
-      { courses: sortedCourses },
+      { courses: transformedCourses },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',

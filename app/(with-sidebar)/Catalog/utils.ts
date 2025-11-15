@@ -1,4 +1,3 @@
-import { getCourseDetails } from "@/lib/course-mapper";
 import { SEMESTER_COLORS, YEAR_COLOR_PALETTES, YEAR_TIMELINE_COLORS } from "./constants";
 import { PathwayData, TimelineItem } from "./types";
 
@@ -54,8 +53,8 @@ export function getSemesterDisplayName(semesterName: string): string {
 
 // Convert pathway data to timeline format organized by semester periods
 export function pathwayToTimeline(
-  pathwayData: PathwayData, 
-  campusId: string = 'manoa'
+  pathwayData: PathwayData,
+  _campusId: string = 'manoa' // Prefix with _ to indicate intentionally unused
 ): { items: TimelineItem[], categories: string[], periods: string[] } {
   const items: TimelineItem[] = [];
   const categories = ['Courses', 'Internships', 'Clubs & Extra Curriculars', 'Part-Time Jobs'];
@@ -106,8 +105,8 @@ export function pathwayToTimeline(
 
       // Add each course to the "Courses" category
       semester.courses.forEach((course) => {
-        // Get detailed course information from the selected campus courses.json
-        const courseDetails = getCourseDetails(course.name, campusId);
+        // Course details would need to be fetched via API if needed
+        // For now, we'll use the basic course info from the pathway data
         
         items.push({
           id: `${itemId++}`,
@@ -118,7 +117,7 @@ export function pathwayToTimeline(
           endYear: actualYear,
           endMonth,
           description: `${course.credits} credits • ${semesterLabel}`,
-          courseDetails,
+          courseDetails: undefined, // Course details would be fetched via API when viewing details
           credits: course.credits, // Include credits from pathway data
         });
       });

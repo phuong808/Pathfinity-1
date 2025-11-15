@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './roadmap.module.css';
-import { CAMPUSES, getMajorsByCampus, type MajorData } from "@/lib/course-mapper";
+import { CAMPUSES, type MajorData, type PathwayData } from "@/lib/course-mapper";
 import { pathwayToTimeline } from './utils';
 import { TimelineItem, PathwayRecord, CourseCatalog, ViewMode } from './types';
 import { RoadmapHeader } from './components/RoadmapHeader';
@@ -32,6 +32,10 @@ export default function RoadmapPage() {
   const [departmentCourses, setDepartmentCourses] = useState<CourseCatalog[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  
+  // States for majors
+  const [majors, setMajors] = useState<MajorData[]>([]);
+  const [loadingMajors, setLoadingMajors] = useState(false);
 
   // Fetch pathways on mount
   useEffect(() => {
@@ -67,6 +71,28 @@ export default function RoadmapPage() {
     };
     fetchDepartments();
   }, [selectedCampus]);
+
+  // Fetch majors when campus changes or view mode changes to majors
+  useEffect(() => {
+    if (viewMode === 'majors') {
+      const fetchMajors = async () => {
+        setLoadingMajors(true);
+        try {
+          const response = await fetch(`/api/degree-programs?campus=${selectedCampus}`);
+          if (response.ok) {
+            const data = await response.json();
+            setMajors(data.programs || []);
+          }
+        } catch (error) {
+          console.error('Error fetching majors:', error);
+          setMajors([]);
+        } finally {
+          setLoadingMajors(false);
+        }
+      };
+      fetchMajors();
+    }
+  }, [selectedCampus, viewMode]);
 
   // Fetch courses when department changes with abort controller for optimization
   useEffect(() => {
@@ -174,13 +200,12 @@ export default function RoadmapPage() {
   // Compute majors list based on current campus and search term
   const filteredMajors = useMemo(() => {
     if (viewMode !== 'majors') return [];
-    const allMajors = getMajorsByCampus(selectedCampus);
-    if (!majorSearchTerm.trim()) return allMajors;
+    if (!majorSearchTerm.trim()) return majors;
     const searchLower = majorSearchTerm.toLowerCase();
-    return allMajors.filter(major => 
+    return majors.filter(major => 
       major.majorName.toLowerCase().includes(searchLower)
     );
-  }, [viewMode, selectedCampus, majorSearchTerm]);
+  }, [viewMode, majors, majorSearchTerm]);
 
   // Compute dynamic header title based on selections
   const headerTitle = useMemo(() => {
@@ -269,14 +294,23 @@ export default function RoadmapPage() {
           </div>
         ) : (
           // Majors View
-          <MajorsView
-            filteredMajors={filteredMajors}
-            selectedCampus={selectedCampus}
-            selectedMajor={selectedMajor}
-            majorSearchTerm={majorSearchTerm}
-            onMajorSearchChange={setMajorSearchTerm}
-            onMajorSelect={handleMajorSelect}
-          />
+          <>
+            {loadingMajors ? (
+              <div className="text-center p-12">
+                <div className="text-4xl mb-4">⏳</div>
+                <p className="text-gray-600">Loading majors...</p>
+              </div>
+            ) : (
+              <MajorsView
+                filteredMajors={filteredMajors}
+                selectedCampus={selectedCampus}
+                selectedMajor={selectedMajor}
+                majorSearchTerm={majorSearchTerm}
+                onMajorSearchChange={setMajorSearchTerm}
+                onMajorSelect={handleMajorSelect}
+              />
+            )}
+          </>
         )}
       </div>
 

@@ -115,6 +115,20 @@ export async function getCoursesByDepartment(campusId: string, deptName: string)
     .orderBy(asc(course.coursePrefix), asc(course.courseNumber));
 }
 
+/**
+ * Get all unique departments for a campus
+ */
+export async function getDepartmentsByCampus(campusId: string) {
+  const result = await db.selectDistinct({
+    deptName: course.deptName,
+  })
+  .from(course)
+  .where(eq(course.campusId, campusId))
+  .orderBy(asc(course.deptName));
+  
+  return result.map(r => r.deptName).filter((name): name is string => name !== null);
+}
+
 // ========== DEGREE PROGRAM QUERIES ==========
 
 /**
@@ -353,6 +367,96 @@ export async function getCourseCountByCampus() {
   .leftJoin(campus, eq(course.campusId, campus.id))
   .groupBy(course.campusId, campus.name)
   .orderBy(desc(sql`count(*)`));
+}
+
+/**
+ * Get complete degree program with pathway in a format compatible with the frontend
+ * Returns the pathway data structured like the JSON files
+ */
+export async function getDegreeProgramsWithPathways(campusId: string) {
+  // Get all degree programs for the campus with related data
+  const programs = await db.select({
+    program: degreeProgram,
+    degree: degree,
+    campus: campus,
+  })
+  .from(degreeProgram)
+  .leftJoin(degree, eq(degreeProgram.degreeId, degree.id))
+  .leftJoin(campus, eq(degreeProgram.campusId, campus.id))
+  .where(eq(degreeProgram.campusId, campusId))
+  .orderBy(asc(degreeProgram.majorTitle));
+
+  // For each program, get its complete pathway
+  const result = await Promise.all(programs.map(async ({ program, degree: deg, campus: camp }) => {
+    const pathway = await getCompletePathway(program.id);
+    
+    // Transform to the format expected by the frontend
+    const pathwayData = pathway.length > 0 ? {
+      program_name: program.programName,
+      institution: camp?.name || campusId,
+      total_credits: program.totalCredits || 0,
+      years: transformPathwayToYears(pathway),
+    } : null;
+
+    return {
+      id: program.id,
+      programName: program.programName,
+      majorTitle: program.majorTitle,
+      track: program.track,
+      degreeCode: deg?.code,
+      degreeName: deg?.name,
+      institution: camp?.name || campusId,
+      totalCredits: program.totalCredits,
+      pathwayData,
+    };
+  }));
+
+  return result;
+}
+
+/**
+ * Transform database pathway structure to the year-based structure expected by frontend
+ */
+interface PathwaySemester {
+  yearNumber: number;
+  semesterName: string;
+  semesterCredits: number | null;
+  courses: Array<{
+    pathwayCourse: {
+      courseName: string;
+      credits: number;
+    };
+  }>;
+}
+
+function transformPathwayToYears(pathwayWithCourses: PathwaySemester[]) {
+  // Group by year
+  const yearMap = new Map<number, PathwaySemester[]>();
+  
+  for (const semester of pathwayWithCourses) {
+    const yearNum = semester.yearNumber;
+    if (!yearMap.has(yearNum)) {
+      yearMap.set(yearNum, []);
+    }
+    yearMap.get(yearNum)!.push(semester);
+  }
+
+  // Convert to array format
+  const years = Array.from(yearMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([yearNumber, semesters]) => ({
+      year_number: yearNumber,
+      semesters: semesters.map(semester => ({
+        semester_name: semester.semesterName,
+        credits: semester.semesterCredits || 0,
+        courses: semester.courses.map((c) => ({
+          name: c.pathwayCourse.courseName,
+          credits: c.pathwayCourse.credits,
+        })),
+      })),
+    }));
+
+  return years;
 }
 
 /**

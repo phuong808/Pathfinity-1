@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDepartmentsByCampus } from '@/app/db/queries';
+import { getDegreeProgramsWithPathways } from '@/app/db/queries';
 
-// Cache for departments by campus
-const departmentsCache = new Map<string, { data: string[], timestamp: number }>();
+// Cache for degree programs by campus
+const programsCache = new Map<string, { data: unknown[], timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
 export async function GET(request: NextRequest) {
@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Check cache first
-    const cached = departmentsCache.get(campus);
+    const cached = programsCache.get(campus);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       return NextResponse.json(
-        { departments: cached.data },
+        { programs: cached.data },
         {
           headers: {
             'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
@@ -30,14 +30,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get departments from database
-    const departments = await getDepartmentsByCampus(campus);
+    // Get programs from database
+    const dbPrograms = await getDegreeProgramsWithPathways(campus);
 
-    // Update cache
-    departmentsCache.set(campus, { data: departments, timestamp: Date.now() });
+    const transformedPrograms = dbPrograms.map(program => ({
+      majorName: program.programName || program.majorTitle || 'Untitled Program',
+      degrees: program.degreeCode ? [program.degreeCode] : [],
+      institution: program.institution,
+      pathwayData: program.pathwayData,
+    }));
+
+    programsCache.set(campus, { data: transformedPrograms, timestamp: Date.now() });
 
     return NextResponse.json(
-      { departments },
+      { programs: transformedPrograms },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
@@ -45,9 +51,9 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error fetching departments:', error);
+    console.error('Error fetching degree programs:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch departments' },
+      { error: 'Failed to fetch degree programs' },
       { status: 500 }
     );
   }

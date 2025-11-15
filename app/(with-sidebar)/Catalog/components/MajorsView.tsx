@@ -12,7 +12,12 @@ interface MajorsViewProps {
 }
 
 // Helper function to clean up major names by removing full degree titles and abbreviations
-function cleanMajorName(majorName: string): string {
+function cleanMajorName(majorName: string | undefined | null): string {
+  // Handle undefined, null, or empty strings
+  if (!majorName) {
+    return 'Untitled Program';
+  }
+  
   // Remove patterns like "Bachelor of Science", "Bachelor of Arts", etc.
   // Also remove abbreviations in parentheses like (BS), (BA), (BBA), etc.
   return majorName
@@ -58,14 +63,10 @@ export function MajorsView({
           <div className="text-center p-12 bg-white rounded-2xl shadow-lg">
             <div className="text-6xl mb-4">🔍</div>
             <p className="text-gray-700 text-xl font-semibold mb-2">
-              {selectedCampus === 'manoa' || selectedCampus === 'kapiolani'
-                ? "No majors found"
-                : "No pathway data available for this campus"}
+              No majors found
             </p>
             <p className="text-gray-500 text-sm max-w-md mx-auto">
-              {selectedCampus === 'manoa' || selectedCampus === 'kapiolani'
-                ? "Try a different search term"
-                : "Currently, only UH Mānoa and Kapiʻolani CC have complete degree pathway data. Select one of these campuses from the dropdown to explore available programs."}
+              Try a different search term or select a different campus
             </p>
           </div>
         ) : (
@@ -92,14 +93,20 @@ export function MajorsView({
                         {cleanMajorName(major.majorName)}
                       </h3>
                       <div className="flex flex-wrap gap-1">
-                        {major.degrees.map((degree, i) => (
-                          <span
-                            key={i}
-                            className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded"
-                          >
-                            {degree}
+                        {(major.degrees && major.degrees.length > 0) ? (
+                          major.degrees.map((degree, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded"
+                            >
+                              {degree}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded">
+                            Degree
                           </span>
-                        ))}
+                        )}
                       </div>
                       {major.pathwayData && major.pathwayData.years && major.pathwayData.years.length > 0 ? (
                         <div className="mt-2 text-xs text-green-600 font-medium flex items-center gap-1">
