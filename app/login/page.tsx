@@ -91,17 +91,23 @@ export default function LoginPage() {
     setError('');
     
     try {
+      console.log('🔍 Starting Google sign in...');
+      console.log('Redirect URL will be: /Chat');
+      
       // Better Auth handles the OAuth flow automatically
       // It will redirect to Google, then back to your callback URL
       await authClient.signIn.social({
         provider: 'google',
         callbackURL: '/Chat', // Where to redirect after successful auth
       });
+      
+      console.log('✅ Google sign in initiated');
     } catch (error) {
-      console.error('Google sign in error:', error);
-      setError('Failed to sign in with Google');
+      console.error('❌ Google sign in error:', error);
+      setError(`Failed to sign in with Google: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsGoogleLoading(false);
     }
+    // Note: Don't set loading to false on success, as we'll be redirecting
   };
 
   const handleGithubSignIn = async () => {

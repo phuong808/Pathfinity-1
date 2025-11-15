@@ -111,28 +111,37 @@ export async function buildRagContext(
       }
     }
 
-    // Build context summary
+    // Build context summary with richer information
     const summaryParts: string[] = [];
 
     if (context.relevantCourses.length > 0) {
       summaryParts.push(
-        `Relevant Courses (${context.relevantCourses.length}):\n` +
+        `📚 RELEVANT COURSES (${context.relevantCourses.length} found via semantic search):\n` +
         context.relevantCourses
-          .map(c => `- ${c.code}: ${c.title} (${c.credits} cr) @ ${c.campus}`)
-          .join('\n')
+          .map(c => `  • ${c.code}: ${c.title}\n    ${c.credits} credits @ ${c.campus}\n    ${c.description.substring(0, 150)}${c.description.length > 150 ? '...' : ''}`)
+          .join('\n\n')
       );
     }
 
     if (context.relevantPrograms.length > 0) {
       summaryParts.push(
-        `Relevant Degree Programs (${context.relevantPrograms.length}):\n` +
+        `🎓 RELEVANT DEGREE PROGRAMS (${context.relevantPrograms.length} found via semantic search):\n` +
         context.relevantPrograms
-          .map(p => `- ${p.majorTitle} (${p.degreeCode}) @ ${p.campus}`)
-          .join('\n')
+          .map(p => {
+            const credits = p.totalCredits ? ` - ${p.totalCredits} total credits` : '';
+            return `  • ${p.majorTitle} (${p.degreeCode})${credits}\n    Campus: ${p.campus}`;
+          })
+          .join('\n\n')
       );
     }
 
-    context.contextSummary = summaryParts.join('\n\n');
+    if (summaryParts.length > 0) {
+      context.contextSummary = 
+        `\n=== SEMANTIC SEARCH RESULTS FROM DATABASE ===\n` +
+        `The following information was found by searching ${context.relevantCourses.length + context.relevantPrograms.length} embeddings:\n\n` +
+        summaryParts.join('\n\n') +
+        `\n\n⚠️  IMPORTANT: These are CONFIRMED to exist in the database. Use tools to get complete details.`;
+    }
 
   } catch (error) {
     console.error('Error building RAG context:', error);

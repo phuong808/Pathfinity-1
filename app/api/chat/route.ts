@@ -51,6 +51,14 @@ export async function POST(req: Request) {
             tools: tools as any,
         });
 
+        // Detect if this is the first user message (for welcome greeting)
+        const isFirstMessage = previousMessages.length === 0 && message;
+        console.log('📨 Message stats:', { 
+            previousCount: previousMessages.length, 
+            isFirstMessage,
+            hasNewMessage: !!message 
+        });
+
         // Build RAG context from user's latest message using semantic search on embeddings
         let ragContext = '';
         if (message) {
@@ -80,13 +88,16 @@ export async function POST(req: Request) {
                     const context = await buildRagContext(userQuery, {
                         includeCourses: true,
                         includePrograms: true,
-                        limit: 5,
+                        limit: 8, // Increased from 5 to get more context
                     });
                     ragContext = context.contextSummary;
                     console.log('🔍 RAG Context Generated for query:', userQuery.substring(0, 50));
                     console.log('📊 Context length:', ragContext.length, 'chars');
                     console.log('📚 Programs found:', context.relevantPrograms.length);
                     console.log('📖 Courses found:', context.relevantCourses.length);
+                    if (context.relevantPrograms.length > 0) {
+                        console.log('🎯 Top program:', context.relevantPrograms[0].majorTitle);
+                    }
                 }
             } catch (error) {
                 console.error('Error building RAG context:', error);
@@ -94,15 +105,40 @@ export async function POST(req: Request) {
             }
         }
 
-        const baseSystemPrompt = `You are an academic advisor assistant for the University of Hawaii system. You have access to comprehensive information about ALL courses and degree programs across the entire UH system through a powerful database.`;
+        const baseSystemPrompt = `You are an academic advisor assistant for the University of Hawaii system. You have access to comprehensive information about ALL courses and degree programs across the entire UH system through a powerful database with semantic search capabilities.
+
+${isFirstMessage ? `
+🎯 IMPORTANT: This is the user's FIRST message in a new conversation. 
+Respond with the full welcome message provided in the CRITICAL RULES section.
+Do NOT use any tools for the first message - just greet them with the welcome message.
+` : `
+This is a continuing conversation. Respond naturally based on context.
+`}
+
+🔍 SEMANTIC SEARCH CONTEXT:
+Before you receive each user query, we perform semantic search on 5,000+ course embeddings and 190+ degree program embeddings to find the most relevant information. This context appears below and contains CONFIRMED programs/courses that exist in the database.`;
 
         const ragContextSection = ragContext ? `
 
-RELEVANT CONTEXT FROM DATABASE (based on semantic search of embeddings):
+═══════════════════════════════════════════════════════════════
+📊 SEMANTIC SEARCH RESULTS FOR THIS QUERY:
 ${ragContext}
+═══════════════════════════════════════════════════════════════
 
-Use this context to inform your responses, but always verify with tools when providing specific information.
-` : '';
+HOW TO USE THIS CONTEXT:
+1. The programs/courses listed above are CONFIRMED to exist in the database
+2. Use getDegreeProgram or getCourse tools to get complete, formatted information
+3. The semantic search has already identified relevant matches - don't say "not found"
+4. If context shows Computer Science programs exist, use the tool to retrieve them
+5. Trust the semantic search - it has 60%+ similarity matching
+6. ALWAYS call the appropriate tool when context shows relevant results
+
+` : `
+
+⚠️  No semantic search context available for this query.
+Use tools to search the database directly.
+
+`;
 
         const result = streamText({
             model: openai('gpt-4o-mini'),
@@ -112,17 +148,49 @@ Use this context to inform your responses, but always verify with tools when pro
 
 CRITICAL RULES:
 1. ALWAYS respond to every user message, including greetings ("hi", "hello", "hey", "bro")
-2. When greeting back, be brief and ask what they need help with
+2. **FIRST MESSAGE GREETING**: If this is the first message in a new conversation (no previous messages), respond with the full welcome message below
 3. NEVER ignore the user or skip responding
 4. Use ONE tool per response maximum
 5. NEVER mention tool names, API errors, or technical issues to users
 6. If a tool fails or returns no results, provide a helpful fallback response
-7. Do not use emojis in responses
+7. Do not use emojis in responses EXCEPT in the welcome message
 8. Keep responses natural and conversational
+9. **CRITICAL: If semantic search context shows programs exist, ALWAYS use the tool to retrieve them**
+10. **Never say "not found" if semantic search context shows matching results**
+11. **Trust the semantic search results - they are from actual database embeddings**
+
+**WELCOME MESSAGE (Use this ONLY for first interaction in new chat):**
+"👋 Welcome to Pathfinity!
+
+Hey there! I'm Pathfinity, your personal career exploration and academic pathway guide. Whether you're just starting to think about your future, reconsidering your current direction, or planning a career pivot, I'm here to help you confidently move forward.
+
+With me, you can:
+✨ Explore potential career paths that match your goals
+✨ Discover relevant majors, programs, and training options
+✨ Learn about courses and skills needed for your dream path
+✨ Get personalized guidance — not generic advice
+
+Before we begin, I'd love to understand where you are in your journey so I can tailor the experience for you. Which one best describes you right now?
+
+1️⃣ I'm a middle or high school student exploring possible majors or careers
+2️⃣ I'm currently in college and may be reconsidering my major
+3️⃣ I'm already working and interested in career pivoting or upskilling
+
+Just reply with 1, 2, or 3 — or feel free to describe your situation in your own words.
+Ready when you are! 🚀"
+
+**NOTE**: After the welcome message, respond naturally to their choice/message and help them accordingly.
 
 AVAILABLE TOOLS & USAGE:
 
 **CRITICAL: For ANY query about majors, programs, or degrees, ALWAYS use getDegreeProgram tool first!**
+
+📖 EXAMPLE WORKFLOW:
+User asks: "I want to see computer science degree at uh manoa"
+1. Check semantic search context → sees "Computer Science (BS) @ University of Hawaiʻi at Mānoa"
+2. Call getDegreeProgram with query="Computer Science", campus="UH Manoa"
+3. Display the formatted results from the tool
+4. Offer to show pathway/roadmap if interested
 
 All tools return structured objects with:
 - found: boolean (whether results were found)
@@ -138,11 +206,13 @@ ALWAYS check the 'found' field first:
 **PRIMARY TOOLS FOR DEGREE PROGRAMS:**
 
 For DEGREE PROGRAM queries:
+- **WORKFLOW**: Check semantic search context FIRST, then call getDegreeProgram
 - Search programs: use getDegreeProgram with query, campus, and/or degreeType
   - Finds degree programs by major name, degree type (BA, BS, AA, etc.), or campus
   - Returns program details: credits, duration, tracks available
-  - Example: "Show me Computer Science programs" → getDegreeProgram with query="Computer Science"
+  - Example: If semantic search shows "Computer Science (BS) @ UH Manoa", call getDegreeProgram with query="Computer Science", campus="UH Manoa"
   - Example: "What BS degrees at UH Manoa" → getDegreeProgram with campus="UH Manoa", degreeType="BS"
+  - **IMPORTANT**: Extract the exact major name and campus from semantic search context and pass to tool
 - Get pathway/roadmap: use getPathway with programId from getDegreeProgram results
   - Shows complete semester-by-semester course plan
   - Displays all courses organized by year and semester

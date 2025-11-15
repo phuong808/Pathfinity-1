@@ -15,6 +15,12 @@ function generateSecurePassword(length: number = 16): string {
   return password;
 }
 
+// Log OAuth configuration status
+console.log('🔐 Better Auth Configuration:');
+console.log('  - Google OAuth:', process.env.GOOGLE_CLIENT_ID ? '✅ Configured' : '❌ Missing');
+console.log('  - GitHub OAuth:', process.env.GITHUB_CLIENT_ID ? '✅ Configured' : '❌ Missing');
+console.log('  - Base URL:', process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000');
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -25,6 +31,8 @@ export const auth = betterAuth({
       verification: schema.verification,
     },
   }),
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL || "http://localhost:3000",
+  trustedOrigins: ["http://localhost:3000", "https://localhost:3000"],
   secret: process.env.BETTER_AUTH_SECRET || "fallback-secret-for-development",
   pages : {
     signIn: '/login',
@@ -34,14 +42,18 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
   socialProviders: {
-        github: { 
-            clientId: process.env.GITHUB_CLIENT_ID as string, 
-            clientSecret: process.env.GITHUB_CLIENT_SECRET as string, 
-        }, 
-        google: { 
-            clientId: process.env.GOOGLE_CLIENT_ID as string, 
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, 
-        },
+        ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET ? {
+          github: { 
+              clientId: process.env.GITHUB_CLIENT_ID, 
+              clientSecret: process.env.GITHUB_CLIENT_SECRET, 
+          },
+        } : {}),
+        ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? {
+          google: { 
+              clientId: process.env.GOOGLE_CLIENT_ID, 
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET, 
+          },
+        } : {}),
     },
   events: {
     user: {
