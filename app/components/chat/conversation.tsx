@@ -147,10 +147,34 @@ export function Conversation({ messages, status, className }: Props) {
       <ConversationContent>
         {messages.length === 0 ? (
             <ConversationEmptyState
-                title="Welcome to Pathfinity!"
-                description="Are you exploring, deciding a major, or preparing for a career? I'll help you find the best pathway to reach your goals."
-                className="text-left"
-            />
+                className="text-left items-start"
+            >
+              <div className="w-full space-y-1 mb-4">
+                <h3 className="font-medium text-xl font-bold">👋 Welcome to Pathfinity!</h3>
+              </div>
+              <div className="w-full space-y-4 text-base text-muted-foreground whitespace-pre-line">
+                <p>Hey there! I&apos;m Pathfinity, your personal career exploration and academic pathway guide. Whether you&apos;re just starting to think about your future, reconsidering your current direction, or planning a career pivot, I&apos;m here to help you confidently move forward.</p>
+                
+                <div>
+                  <p className="mb-2">With me, you can:</p>
+                  <p>✨ Explore potential career paths that match your goals</p>
+                  <p>✨ Discover relevant majors, programs, and training options</p>
+                  <p>✨ Learn about courses and skills needed for your dream path</p>
+                  <p>✨ Get personalized guidance — not generic advice</p>
+                </div>
+                
+                <div>
+                  <p className="mb-2">Before we begin, I&apos;d love to understand where you are in your journey so I can tailor the experience for you. Which one best describes you right now?</p>
+                  <p>1️⃣ I&apos;m a middle or high school student exploring possible majors or careers</p>
+                  <p>2️⃣ I&apos;m currently in college and may be reconsidering my major</p>
+                  <p>3️⃣ I&apos;m already working and interested in career pivoting or upskilling</p>
+                </div>
+                
+                <p>Just reply with 1, 2, or 3 — or feel free to describe your situation in your own words.</p>
+                
+                <p>Ready when you are! 🚀</p>
+              </div>
+            </ConversationEmptyState>
         ) : (
           messages.map((message) => (
             <div key={message.id}>

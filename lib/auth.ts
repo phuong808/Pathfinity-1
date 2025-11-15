@@ -15,11 +15,11 @@ function generateSecurePassword(length: number = 16): string {
   return password;
 }
 
-// Log OAuth configuration status
-console.log('🔐 Better Auth Configuration:');
-console.log('  - Google OAuth:', process.env.GOOGLE_CLIENT_ID ? '✅ Configured' : '❌ Missing');
-console.log('  - GitHub OAuth:', process.env.GITHUB_CLIENT_ID ? '✅ Configured' : '❌ Missing');
-console.log('  - Base URL:', process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000');
+// OAuth configuration logs (commented out to reduce terminal noise)
+// console.log('🔐 Better Auth Configuration:');
+// console.log('  - Google OAuth:', process.env.GOOGLE_CLIENT_ID ? '✅ Configured' : '❌ Missing');
+// console.log('  - GitHub OAuth:', process.env.GITHUB_CLIENT_ID ? '✅ Configured' : '❌ Missing');
+// console.log('  - Base URL:', process.env.BETTER_AUTH_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000');
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
