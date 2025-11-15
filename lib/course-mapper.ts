@@ -135,9 +135,8 @@ export function getCourseDetails(courseName: string, campusId: string = 'manoa')
     m = up.match(/([A-Z]{2,})\s*[-]?\s*(\d{2,3}[A-Z]?)/);
     if (m) return `${m[1]} ${m[2]}`;
     // 3) If just a number-like token, try to recover prefix from the original cleanedName
-    const pfx = cleanedName.toUpperCase().match(/^([A-Z]{2,})/)
-      ? cleanedName.toUpperCase().match(/^([A-Z]{2,})/)![1]
-      : undefined;
+    const pfxMatch = cleanedName.toUpperCase().match(/^([A-Z]{2,})/);
+    const pfx = pfxMatch ? pfxMatch[1] : undefined;
     const num = up.match(/^(\d{2,3}[A-Z]?)$/)?.[1];
     if (pfx && num) return `${pfx} ${num}`;
     return null;
