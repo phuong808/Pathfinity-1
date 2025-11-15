@@ -5,6 +5,8 @@ import { Button } from "@/app/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
 import { Plus, Minus } from "lucide-react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import ProfileCardOptions from "@/app/components/profiles/profile-card-options"
 
 interface ProfileCardProps {
     id: number
@@ -26,13 +28,25 @@ export default function ProfileCard({
     skills,
 }: ProfileCardProps) {
     const [isOpen, setIsOpen] = useState(false)
+    const router = useRouter()
+
+    const handleViewRoadmap = () => {
+        // Use the profile ID for personalized roadmap routing under Roadmaps/Profile
+        router.push(`/Roadmaps/Profile/${id}`)
+    }
 
     return (
         <Card className="w-full flex flex-col overflow-hidden">
             <CardHeader className="py-2 px-6 flex-shrink-0">
-                <CardTitle className="text-lg font-semibold text-gray-900">
-                    {career}
-                </CardTitle>
+                <div className="flex items-center justify-between w-full">
+                    <CardTitle className="text-lg font-semibold text-gray-900">
+                        {career}
+                    </CardTitle>
+                    <ProfileCardOptions
+                        onEdit={() => console.log("edit profile", id)}
+                        onDelete={() => console.log("delete profile", id)}
+                    />
+                </div>
             </CardHeader>
 
             <CardContent className="flex-1">
@@ -121,10 +135,7 @@ export default function ProfileCard({
                     variant="link"
                     size="sm"
                     className="text-green-600 hover:text-green-700 h-auto p-0 text-sm flex items-center gap-1"
-                    onClick={() => {
-                        // TODO: Implement view roadmap functionality
-                        console.log("View roadmap for profile:", id)
-                    }}
+                    onClick={handleViewRoadmap}
                 >
                     View Roadmap
                 </Button>

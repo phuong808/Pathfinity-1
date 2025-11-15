@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { Spinner } from "@/app/components/ui/spinner"
+import SearchBar from "@/app/components/pathway/search-bar"
+import FilterPopover from "@/app/components/pathway/filter-popover"
+import SortControl from "@/app/components/pathway/sort-control"
 import ProfileCarousel from "@/app/components/profiles/profile-carousel"
+import PathwayCard from "@/app/components/pathway/pathway-card"
 
 interface Profile {
     id: number
@@ -19,12 +23,30 @@ interface Profile {
     updatedAt: Date
 }
 
+interface Pathway {
+    id: number
+    programName: string
+    institution: string
+    totalCredits: string
+    pathwayData: any
+}
+
 export default function RoadmapsPage() {
     const [profiles, setProfiles] = useState<Profile[]>([])
+    const [activeTab, setActiveTab] = useState<string>("my-roadmaps")
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
-    const [modalOpen, setModalOpen] = useState(false)
+    
+    // Catalog tab states
+    const [pathways, setPathways] = useState<Pathway[]>([])
+    const [catalogLoading, setCatalogLoading] = useState(false)
+    const [catalogError, setCatalogError] = useState<string | null>(null)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [filterInstitution, setFilterInstitution] = useState("")
+    const [filterCredits, setFilterCredits] = useState<string>("any")
+    const [filterDegree, setFilterDegree] = useState<string>("any")
+    const [sortBy, setSortBy] = useState<string>("")
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
 
     useEffect(() => {
         async function fetchProfiles() {
@@ -45,21 +67,74 @@ export default function RoadmapsPage() {
         fetchProfiles()
     }, [])
 
-    const handleViewMore = (profile: Profile) => {
-        setSelectedProfile(profile)
-        setModalOpen(true)
+    useEffect(() => {
+        async function fetchPathways() {
+            setCatalogLoading(true)
+            try {
+                const response = await fetch("/api/pathways")
+                if (!response.ok) {
+                    throw new Error("Failed to fetch pathways")
+                }
+                const data = await response.json()
+                setPathways(data)
+            } catch (err) {
+                setCatalogError(err instanceof Error ? err.message : "An error occurred")
+            } finally {
+                setCatalogLoading(false)
+            }
+        }
+
+        fetchPathways()
+    }, [])
+
+    // Filter pathways based on search term
+    let filteredPathways = pathways.filter((pathway) =>
+        pathway.programName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pathway.institution.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+    // Apply additional filters
+    if (filterInstitution.trim() !== "") {
+        filteredPathways = filteredPathways.filter((p) =>
+            p.institution.toLowerCase().includes(filterInstitution.toLowerCase())
+        )
     }
+
+    if (filterCredits !== "any") {
+        filteredPathways = filteredPathways.filter((p) => {
+            const credits = Number(p.totalCredits) || 0
+            if (filterCredits === "lt30") return credits < 30
+            if (filterCredits === "30to60") return credits >= 30 && credits <= 60
+            if (filterCredits === "gt60") return credits > 60
+            return true
+        })
+    }
+
+
+    // Sorting
+
+    filteredPathways = [...filteredPathways]
+    filteredPathways.sort((a, b) => {
+        if (sortBy === "credits") {
+            const aCredits = Number((a as any).totalCredits) || 0
+            const bCredits = Number((b as any).totalCredits) || 0
+            return sortDir === "asc" ? aCredits - bCredits : bCredits - aCredits
+        }
+        if (sortBy === "alpha") {
+            return sortDir === "asc" ? a.programName.localeCompare(b.programName) : b.programName.localeCompare(a.programName)
+        }
+        return 0
+    })
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-7xl">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Roadmaps</h1>
-                <p className="text-gray-600">
-                    View and manage your personalized learning pathways
-                </p>
+                <p className="text-gray-600">Manage your pathway profiles and explore the roadmap catalog.</p>
+                <div className="text-sm text-gray-500 mt-2">{profiles.length} profiles · {pathways.length} catalog items</div>
             </div>
 
-            <Tabs defaultValue="my-roadmaps" className="w-full">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)} className="w-full">
                 <div className="flex justify-center mb-6">
                     <TabsList>
                         <TabsTrigger value="my-roadmaps">My Roadmaps</TabsTrigger>
@@ -80,18 +155,66 @@ export default function RoadmapsPage() {
                     ) : (
                         <ProfileCarousel
                             profiles={profiles}
-                            onViewMore={handleViewMore}
                         />
                     )}
                 </TabsContent>
 
                 <TabsContent value="catalog" className="space-y-6">
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="text-gray-500 mb-2">Roadmap Catalog</div>
-                        <p className="text-sm text-gray-400">
-                            TODO: Browse and explore pre-built roadmaps
-                        </p>
+                    {/* Sort, Search and Filters row */}
+                    <div className="w-full">
+                        <div className="flex items-center gap-4">
+            
+                            <div className="flex-1">
+                                <SearchBar value={searchTerm} onChange={setSearchTerm} />
+                            </div>
+                            <div className="flex-shrink-0">
+                                    <SortControl
+                                        sortBy={sortBy}
+                                        sortDir={sortDir}
+                                        onChange={(by, dir) => { setSortBy(by); setSortDir(dir) }}
+                                    />
+                            </div>
+                            <div className="flex-shrink-0">
+                                <FilterPopover
+                                    filterInstitution={filterInstitution}
+                                    setFilterInstitution={setFilterInstitution}
+                                    filterCredits={filterCredits}
+                                    setFilterCredits={setFilterCredits}
+                                    filterDegree={filterDegree}
+                                    setFilterDegree={setFilterDegree}
+                                />
+                            </div>
+                        </div>
                     </div>
+
+                    {catalogLoading ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Spinner className="w-10 h-10" />
+                            <div className="text-gray-500 pt-10">Loading pathways...</div>
+                        </div>
+                    ) : catalogError ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-red-500">Error: {catalogError}</div>
+                        </div>
+                    ) : filteredPathways.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="text-gray-500 mb-2">No pathways found</div>
+                            <p className="text-sm text-gray-400">
+                                {searchTerm ? "Try adjusting your search" : "No pathways available"}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {filteredPathways.map((pathway) => (
+                                <PathwayCard
+                                    key={pathway.id}
+                                    programName={pathway.programName}
+                                    institution={pathway.institution}
+                                    totalCredits={parseInt(pathway.totalCredits)}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </TabsContent>
             </Tabs>
         </div>
