@@ -62,28 +62,35 @@ function loadManoaCourses(): CourseRecord[] {
 }
 
 /**
- * Find matching pathway template for a major and degree
+ * Find matching pathway template by program name
+ * The program name from the form (e.g., "Computer Science, B.S.") 
+ * should match against pathway template program_name
  */
 function findMatchingPathway(
-  major: string,
-  degree: string,
+  programName: string,
   templates: PathwayTemplate[]
 ): PathwayTemplate | null {
-  const normalizedMajor = major.toLowerCase().trim();
-  const normalizedDegree = degree.toUpperCase().trim();
+  const normalized = programName.toLowerCase().trim();
   
   // Try exact match first
   for (const template of templates) {
-    const programName = template.program_name.toLowerCase();
-    if (programName.includes(normalizedMajor) && programName.includes(normalizedDegree.toLowerCase())) {
+    if (template.program_name.toLowerCase().trim() === normalized) {
       return template;
     }
   }
   
-  // Try partial match - just major name
+  // Try partial match - check if program name contains key terms
   for (const template of templates) {
-    const programName = template.program_name.toLowerCase();
-    if (programName.includes(normalizedMajor)) {
+    const templateName = template.program_name.toLowerCase();
+    if (templateName.includes(normalized)) {
+      return template;
+    }
+  }
+  
+  // Try reverse: check if our program name contains the template name
+  for (const template of templates) {
+    const templateName = template.program_name.toLowerCase();
+    if (normalized.includes(templateName)) {
       return template;
     }
   }
@@ -201,7 +208,7 @@ ${level300.map(formatCourseWithPrereq).join('\n')}
   const prompt = `You are processing a college degree pathway. Your job is to resolve ambiguous course selections and replace electives.
 
 STUDENT INFO:
-- Major: ${profileData.major}
+- Program: ${profileData.program || 'Not specified'}
 - Career Goal: ${profileData.career || 'Not specified'}
 - Interests: ${profileData.interests?.join(', ') || 'Not specified'}
 
@@ -303,8 +310,8 @@ export async function generateAndSaveRoadmap(profileId: number): Promise<void> {
 
   const profileData = profiles[0];
 
-  if (!profileData.college || !profileData.major || !profileData.degree) {
-    throw new Error('Profile is missing required fields: college, major, or degree');
+  if (!profileData.college || !profileData.program) {
+    throw new Error('Profile is missing required fields: college or program');
   }
 
   const campusInfo = await getCampusInfo(profileData.college);
@@ -323,8 +330,7 @@ export async function generateAndSaveRoadmap(profileId: number): Promise<void> {
 
   const pathwayTemplates = loadPathwayTemplates();
   const matchingPathway = findMatchingPathway(
-    profileData.major,
-    profileData.degree,
+    profileData.program,
     pathwayTemplates
   );
 

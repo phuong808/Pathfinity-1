@@ -1,8 +1,8 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/app/components/ui/popover"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/app/components/ui/select"
-import { Input } from "@/app/components/ui/input"
 import ControlButton from "@/app/components/pathway/control-button"
 import { Button } from "@/app/components/ui/button"
 import { Filter } from "lucide-react"
@@ -26,6 +26,24 @@ export default function FilterPopover({
   setFilterDegree,
   className,
 }: Props) {
+  const [campusList, setCampusList] = useState<string[]>([])
+
+  useEffect(() => {
+    let mounted = true
+
+    fetch('/api/campuses')
+      .then((res) => (res.ok ? res.json() : Promise.reject('Failed to fetch campuses')))
+      .then((data: any[]) => {
+        if (!mounted) return
+        const names = data.map((c) => (c?.name ? c.name : String(c)))
+        setCampusList(names)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   return (
     <div className={className}>
       <Popover>
@@ -40,13 +58,21 @@ export default function FilterPopover({
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Institution</label>
-              <Input
-                type="text"
-                placeholder="Filter by institution"
-                value={filterInstitution}
-                onChange={(e) => setFilterInstitution(e.target.value)}
-                className="w-full"
-              />
+              <div className="mt-1">
+                <Select value={filterInstitution === '' ? '__any' : filterInstitution} onValueChange={(v) => setFilterInstitution(v === '__any' ? '' : v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Any" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__any" className="text-popover-foreground">Any</SelectItem>
+                    {campusList.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div>

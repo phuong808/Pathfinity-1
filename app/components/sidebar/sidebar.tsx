@@ -36,11 +36,16 @@ const data = {
             url: "/Catalog",
             icon: BookOpen,
         },
-    {
-      title: "Roadmaps",
-      url: "/Roadmaps",
-      icon: GraduationCap,
-    },
+        {
+          title: "Roadmap Viewer",
+          url: "/SavedRoadmaps",
+          icon: GraduationCap,
+        },
+        {
+          title: "Roadmaps",
+          url: "/Roadmaps",
+          icon: Map,
+        },
         {
             title: "Mentors",
             url: "/Mentors",

@@ -20,8 +20,7 @@ interface Profile {
     userId: string
     career: string
     college: string
-    major: string
-    degree: string
+    program: string
     interests: string[]
     skills: string[]
     roadmap: any
@@ -80,8 +79,7 @@ export default function ProfileCarousel({ profiles }: ProfileCarouselProps) {
                                     id={profile.id}
                                     career={profile.career}
                                     college={profile.college}
-                                    major={profile.major}
-                                    degree={profile.degree}
+                                    program={profile.program}
                                     interests={profile.interests}
                                     skills={profile.skills}
                                 />

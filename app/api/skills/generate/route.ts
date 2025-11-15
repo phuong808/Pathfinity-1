@@ -15,8 +15,7 @@ const MAX_SKILLS = 5
 interface RequestBody {
   career: string
   college?: string
-  major?: string
-  degree?: string
+  program?: string
   interests?: string[]
   previousSkills?: string[]
   selectedSkills?: string[]
@@ -31,7 +30,7 @@ interface RequestBody {
 export async function POST(req: Request) {
   try {
     const body: RequestBody = await req.json()
-    const { career, college, major, degree, interests, previousSkills, selectedSkills } = body
+    const { career, college, program, interests, previousSkills, selectedSkills } = body
 
     if (!career?.trim()) {
       return NextResponse.json(
@@ -43,8 +42,7 @@ export async function POST(req: Request) {
     const skills = await generateSkillsFromLLM({ 
       career, 
       college, 
-      major, 
-      degree, 
+      program, 
       interests,
       previousSkills,
       selectedSkills 
@@ -75,8 +73,7 @@ async function generateSkillsFromLLM(context: RequestBody): Promise<string[]> {
   const contextLines = [
     `Career: ${context.career}`,
     context.college && `College: ${context.college}`,
-    context.major && `Major: ${context.major}`,
-    context.degree && `Degree: ${context.degree}`,
+    context.program && `Program: ${context.program}`,
     context.interests && context.interests.length > 0 && `Interests: ${context.interests.join(', ')}`,
   ].filter(Boolean).join('\n')
 

@@ -5,8 +5,7 @@ import { Button } from "@/app/components/ui/button"
 interface ProfilePreviewProps {
     career: string
     college: string
-    major: string
-    degree: string
+    program: string
     interests: string[]
     skills: string[]
     onEdit?: (step: number) => void
@@ -15,8 +14,7 @@ interface ProfilePreviewProps {
 export default function ProfilePreview({
     career,
     college,
-    major,
-    degree,
+    program,
     interests,
     skills,
     onEdit,
@@ -30,7 +28,7 @@ export default function ProfilePreview({
                 </CardDescription>
             </CardHeader>
 
-            <CardContent className="flex-1 overflow-y-auto">
+            <CardContent className="flex-1">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {/* Column 1: Education */}
                     <div className="space-y-3">
@@ -55,13 +53,8 @@ export default function ProfilePreview({
                             </div>
 
                             <div>
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Major</p>
-                                <p className="text-sm text-gray-900 leading-tight">{major}</p>
-                            </div>
-
-                            <div>
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Degree</p>
-                                <p className="text-sm text-gray-900 leading-tight">{degree}</p>
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Program</p>
+                                <p className="text-sm text-gray-900 leading-tight">{program}</p>
                             </div>
                         </div>
                     </div>

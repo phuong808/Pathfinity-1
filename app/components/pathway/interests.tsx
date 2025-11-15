@@ -10,8 +10,7 @@ type Props = {
   form: {
     career: string
     college: string
-    major: string
-    degree: string
+    program: string
     interests: string[]
   }
   setForm: (form: any) => void
@@ -61,8 +60,7 @@ export default function Interests({ form, setForm, interests: initialInterests, 
         body: JSON.stringify({
           career: form.career,
           college: form.college,
-          major: form.major,
-          degree: form.degree,
+          program: form.program,
           previousInterests,
           selectedInterests,
         }),

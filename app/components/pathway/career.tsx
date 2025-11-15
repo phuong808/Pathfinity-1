@@ -157,7 +157,7 @@ export default function Career({ form, setForm }: Props) {
           >
              
             <Command shouldFilter={false}>
-              <CommandList className="max-h-[10rem]">
+              <CommandList className="max-h-[18rem]">
                 <CommandEmpty>
                   {query.length >= 2 && !loading && (
                     <div className="py-6 text-center text-sm">

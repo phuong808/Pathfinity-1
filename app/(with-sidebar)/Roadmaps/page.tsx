@@ -14,8 +14,7 @@ interface Profile {
     userId: string
     career: string
     college: string
-    major: string
-    degree: string
+    program: string
     interests: string[]
     skills: string[]
     roadmap: any
@@ -88,15 +87,27 @@ export default function RoadmapsPage() {
     }, [])
 
     // Filter pathways based on search term
+    const normalize = (s?: any) =>
+        String(s || '')
+            .normalize?.('NFKD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .replace(/[^\w\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+
+    const normalizedSearch = normalize(searchTerm)
+
     let filteredPathways = pathways.filter((pathway) =>
-        pathway.programName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pathway.institution.toLowerCase().includes(searchTerm.toLowerCase())
+        normalize(pathway.programName).includes(normalizedSearch) ||
+        normalize(pathway.institution).includes(normalizedSearch)
     )
 
     // Apply additional filters
     if (filterInstitution.trim() !== "") {
+        const normalizedInstitution = normalize(filterInstitution)
         filteredPathways = filteredPathways.filter((p) =>
-            p.institution.toLowerCase().includes(filterInstitution.toLowerCase())
+            normalize(p.institution).includes(normalizedInstitution)
         )
     }
 
@@ -198,10 +209,12 @@ export default function RoadmapsPage() {
                         </div>
                     ) : filteredPathways.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <div className="text-gray-500 mb-2">No pathways found</div>
-                            <p className="text-sm text-gray-400">
-                                {searchTerm ? "Try adjusting your search" : "No pathways available"}
-                            </p>
+                            <div className="text-gray-500 mb-2">
+                                {searchTerm ? "No pathways match your search." : "No pathways available."}
+                            </div>
+                            {searchTerm && (
+                                <p className="text-sm text-gray-400">Try adjusting your search or filters.</p>
+                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

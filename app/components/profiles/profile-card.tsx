@@ -7,13 +7,13 @@ import { Plus, Minus } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import ProfileCardOptions from "@/app/components/profiles/profile-card-options"
+import DeleteProfileDialog from "@/app/components/profiles/delete-profile"
 
 interface ProfileCardProps {
     id: number
     career: string
     college: string
-    major: string
-    degree: string
+    program: string
     interests: string[]
     skills: string[]
 }
@@ -22,17 +22,44 @@ export default function ProfileCard({
     id,
     career,
     college,
-    major,
-    degree,
+    program,
     interests,
     skills,
 }: ProfileCardProps) {
     const [isOpen, setIsOpen] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [deleteOpen, setDeleteOpen] = useState(false)
     const router = useRouter()
 
     const handleViewRoadmap = () => {
         // Use the profile ID for personalized roadmap routing under Roadmaps/Profile
         router.push(`/Roadmaps/Profile/${id}`)
+    }
+
+    const handleDelete = async () => {
+        try {
+            setIsDeleting(true)
+            const res = await fetch(`/api/profiles`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id }),
+            })
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}))
+                const message = data?.error || `Failed to delete profile (status ${res.status})`
+                throw new Error(message)
+            }
+
+            // Close dialog and refresh the current route so lists update
+            setDeleteOpen(false)
+            window.location.reload()
+        } catch (e) {
+            console.error("Error deleting profile:", e)
+            alert(e instanceof Error ? e.message : "Failed to delete profile")
+        } finally {
+            setIsDeleting(false)
+        }
     }
 
     return (
@@ -44,7 +71,7 @@ export default function ProfileCard({
                     </CardTitle>
                     <ProfileCardOptions
                         onEdit={() => console.log("edit profile", id)}
-                        onDelete={() => console.log("delete profile", id)}
+                        onDelete={() => setDeleteOpen(true)}
                     />
                 </div>
             </CardHeader>
@@ -62,11 +89,7 @@ export default function ProfileCard({
                         </div>
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Program</p>
-                            <p className="text-sm text-gray-900 leading-tight">{major}</p>
-                        </div>
-                        <div>
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Degree</p>
-                                <p className="text-sm text-gray-900 leading-tight">{degree}</p>
+                            <p className="text-sm text-gray-900 leading-tight truncate">{program}</p>
                         </div>
                     </div>
 
@@ -140,6 +163,13 @@ export default function ProfileCard({
                     View Roadmap
                 </Button>
             </CardFooter>
+            <DeleteProfileDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                profile={{ id, career }}
+                onConfirm={handleDelete}
+                confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
+            />
         </Card>
     )
 }
