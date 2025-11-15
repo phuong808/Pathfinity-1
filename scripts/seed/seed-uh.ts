@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import OpenAI from 'openai';
-import { sql, eq, and, ilike } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { campus, degree, major, majorDegree, course, source, embedding, pathway } from '../../app/db/schema';
 import { DATA_DIR, MAJORS_FILE, section, hash, sourceId, embeddingContent, campusesMap, degreeDefaults, ensureCampus } from './_shared';
 import { seedDegreesAndMajors, seedCoursesAll, seedPathwaysAll } from './_phases';
