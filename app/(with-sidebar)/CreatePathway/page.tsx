@@ -9,14 +9,12 @@ import Interests from "@/app/components/pathway/interests"
 import Skills from "@/app/components/pathway/skills"
 import ProfilePreview from "@/app/components/profiles/profile-preview"
 import { Button } from "@/app/components/ui/button"
-import { Alert, AlertDescription, AlertTitle } from "@/app/components/ui/alert"
-import { Check, AlertTriangle } from "lucide-react"
+import { SuccessAlert, WarningAlert, LoadingAlert } from "@/app/components/pathway/pathway-alerts"
 
 type FormData = {
   career: string
   college: string
-  major: string
-  degree: string
+  program: string
   interests: string[]
   tasks: string
   skills: string[]
@@ -34,8 +32,7 @@ export default function CreatePathwayPage() {
   const [form, setForm] = useState<FormData>({
     career: "",
     college: "",
-    major: "",
-    degree: "",
+    program: "",
     interests: [],
     tasks: "",
     skills: [],
@@ -62,8 +59,7 @@ export default function CreatePathwayPage() {
         body: JSON.stringify({
           career: form.career,
           college: form.college,
-          major: form.major,
-          degree: form.degree,
+          program: form.program,
           interests: form.interests,
           skills: form.skills,
         }),
@@ -85,7 +81,7 @@ export default function CreatePathwayPage() {
 
       // Redirect to roadmap page after a short delay
       setTimeout(() => {
-        router.push("/Roadmap")
+        router.push("/Roadmaps")
       }, 2500)
     } catch (error) {
       console.error("Error saving profile:", error)
@@ -99,7 +95,7 @@ export default function CreatePathwayPage() {
     step === 1
       ? !!form.careerValidated
       : step === 2
-      ? form.college !== "" && form.major !== "" && form.degree !== ""
+      ? form.college !== "" && form.program !== ""
       : step === 3
       ? form.interests.length > 0
       : step === 4
@@ -107,39 +103,37 @@ export default function CreatePathwayPage() {
       : true
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="relative min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Loading Alert (when saving / roadmap processing) */}
+        {isLoading && (
+          <LoadingAlert
+            title={"Processing Roadmap..."}
+            description={"We're generating your personalized roadmap. This can take a minute."}
+          />
+        )}
+
         {/* Success Alert */}
         {showSuccessAlert && (
-          <div className="absolute top-6 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2 px-4">
-            <Alert className="bg-green-50 border-green-800">
-              <Check className="h-4 w-4 text-green-600" />
-              <AlertTitle className="text-green-800">Profile Created Successfully!</AlertTitle>
-              <AlertDescription className="text-green-700">
-                Your pathway profile has been saved. Redirecting to roadmap...
-              </AlertDescription>
-            </Alert>
-          </div>
+          <SuccessAlert
+            title={"Profile Created Successfully!"}
+            description={"Your pathway profile has been saved. Redirecting to roadmap..."}
+          />
         )}
 
         {/* Warning Alert */}
         {showWarningAlert && (
-          <div className="absolute top-6 left-1/2 z-50 w-full max-w-2xl -translate-x-1/2 px-4">
-            <Alert className="bg-yellow-50 border-yellow-600">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertTitle className="text-yellow-800">Profile Saved with Warning</AlertTitle>
-              <AlertDescription className="text-yellow-700">
-                Your profile was created, but we couldn't generate a roadmap. This may be because your campus is not UH Manoa or we don't have a pathway template for your major.
-              </AlertDescription>
-            </Alert>
-          </div>
+          <WarningAlert
+            title={"Profile Saved with Warning"}
+            description={"Your profile was created, but we couldn't generate a roadmap. This may be because your campus is not UH Manoa or we don't have a pathway template for your major."}
+          />
         )}
 
         <div className="min-h-[90vh] flex items-center">
           <div className="w-full">
             <div className="flex flex-col md:flex-row gap-12 md:items-stretch">
               {/* Left: form column */}
-              <div className="flex-1 h-full overflow-hidden">
+              <div className="flex-1 h-full overflow-visible">
                 <div className="h-full">
                   {step === 1 && <Career form={form} setForm={setForm} />}
                   {step === 2 && <College form={form} setForm={setForm} />}
@@ -165,8 +159,7 @@ export default function CreatePathwayPage() {
                         <ProfilePreview
                           career={form.career}
                           college={form.college}
-                          major={form.major}
-                          degree={form.degree}
+                          program={form.program}
                           interests={form.interests}
                           skills={form.skills}
                           onEdit={(targetStep) => setStep(targetStep)}
@@ -218,7 +211,7 @@ export default function CreatePathwayPage() {
                   <Button
                     className="!bg-green-600 !text-white !border-green-600 hover:!bg-green-700 active:!bg-green-800 focus-visible:!ring-2 focus-visible:!ring-green-300"
                     onClick={() => setStep(5)}
-                    disabled={!nextEnabled}
+                    disabled={!nextEnabled || isLoading}
                   >
                     Review
                   </Button>

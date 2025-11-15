@@ -15,8 +15,7 @@ const MAX_INTERESTS = 5
 interface RequestBody {
   career: string
   college?: string
-  major?: string
-  degree?: string
+  program?: string
   previousInterests?: string[]
   selectedInterests?: string[]
 }
@@ -30,7 +29,7 @@ interface RequestBody {
 export async function POST(req: Request) {
   try {
     const body: RequestBody = await req.json()
-    const { career, college, major, degree, previousInterests, selectedInterests } = body
+    const { career, college, program, previousInterests, selectedInterests } = body
 
     if (!career?.trim()) {
       return NextResponse.json(
@@ -42,8 +41,7 @@ export async function POST(req: Request) {
     const interests = await generateInterestsFromLLM({ 
       career, 
       college, 
-      major, 
-      degree, 
+      program, 
       previousInterests,
       selectedInterests 
     })
@@ -73,8 +71,7 @@ async function generateInterestsFromLLM(context: RequestBody): Promise<string[]>
   const contextLines = [
     `Career: ${context.career}`,
     context.college && `College: ${context.college}`,
-    context.major && `Major: ${context.major}`,
-    context.degree && `Degree: ${context.degree}`,
+    context.program && `Program: ${context.program}`,
   ].filter(Boolean).join('\n')
 
   const excludeSection = previousInterests.length > 0 
