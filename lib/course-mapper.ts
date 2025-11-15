@@ -102,32 +102,65 @@ export function getCourseDetails(courseName: string, campusId: string = 'manoa')
   
   // Remove anything in parentheses (like focus areas: "CINE 255 (DH)" -> "CINE 255")
   let cleanedName = courseName.replace(/\s*\([^)]*\)/g, '').trim();
-  
-  // Handle "or" cases - try to get the first course mentioned
-  // e.g., "CINE 315 or 321" -> "CINE 315"
-  // e.g., "FQ (or FW)" -> "FQ"
-  if (cleanedName.includes(' or ')) {
-    cleanedName = cleanedName.split(' or ')[0].trim();
+
+  // Create a list of candidate tokens to try, in order
+  // Handle common composite patterns: "ICS 311 or 314", "PHYS 170/170L", "CHEM 161 & 161L", "ENG 100, 200"
+  const candidates: string[] = [];
+
+  const pushCandidate = (s: string) => {
+    const t = s.trim();
+    if (t && !candidates.includes(t)) candidates.push(t);
+  };
+
+  // Start with the original cleaned
+  pushCandidate(cleanedName);
+
+  // Replace connectors with a common delimiter then split
+  const connectorVariants = [
+    ' or ', ' and ', ' & ', '/', ',', ';'
+  ];
+  let unified = cleanedName;
+  for (const conn of connectorVariants) {
+    unified = unified.split(conn).join(' | ');
   }
-  
-  // Normalize to uppercase
-  const normalizedName = cleanedName.toUpperCase();
-  
-  // Extract course prefix and number from the course name
-  // Handle various formats: "ICS 111", "ICS111", "ICS-111", etc.
-  const match = normalizedName.match(/^([A-Z]+)\s*[-]?\s*(\d+[A-Z]?)$/);
-  
-  if (!match) return undefined;
-  
-  const [, prefix, number] = match;
-  
-  // Find the course in the database
-  const course = campusCourses.find(
-    c => c.course_prefix.toUpperCase() === prefix && 
-         c.course_number.toUpperCase() === number
-  );
-  
-  return course;
+  unified.split('|').forEach(part => pushCandidate(part));
+
+  // If pattern like "CINE 315 or 321" where second token lacks prefix, expand with prefix
+  const prefixNumber = (s: string): string | null => {
+    const up = s.toUpperCase().trim();
+    // 1) Exact entire-string match like "ICS 111" or "ICS-111" or "ICS111"
+    let m = up.match(/^([A-Z]{2,})\s*[-]?\s*(\d{2,3}[A-Z]?)$/);
+    if (m) return `${m[1]} ${m[2]}`;
+    // 2) Embedded match anywhere in the string (e.g., "ICS 111 - Intro ...")
+    m = up.match(/([A-Z]{2,})\s*[-]?\s*(\d{2,3}[A-Z]?)/);
+    if (m) return `${m[1]} ${m[2]}`;
+    // 3) If just a number-like token, try to recover prefix from the original cleanedName
+    const pfx = cleanedName.toUpperCase().match(/^([A-Z]{2,})/)
+      ? cleanedName.toUpperCase().match(/^([A-Z]{2,})/)![1]
+      : undefined;
+    const num = up.match(/^(\d{2,3}[A-Z]?)$/)?.[1];
+    if (pfx && num) return `${pfx} ${num}`;
+    return null;
+  };
+
+  const normalizedCandidates = candidates
+    .map(s => prefixNumber(s))
+    .filter((s): s is string => !!s);
+
+  // Try each candidate until a match is found
+  for (const cand of normalizedCandidates) {
+    const normalizedName = cand.toUpperCase();
+    const match = normalizedName.match(/^([A-Z]+)\s*[-]?\s*(\d+[A-Z]?)$/);
+    if (!match) continue;
+    const [, prefix, number] = match;
+    const found = campusCourses.find(
+      c => c.course_prefix.toUpperCase() === prefix &&
+           c.course_number.toUpperCase() === number
+    );
+    if (found) return found;
+  }
+
+  return undefined;
 }
 
 /**
