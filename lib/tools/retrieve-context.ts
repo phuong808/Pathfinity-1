@@ -45,7 +45,7 @@ export const retrieveContext = tool({
       const queryEmbedding = await generateEmbedding(query);
       // Use cosine distance operator (<=>); similarity = 1 - distance. Cast parameterized vector text to ::vector
       const vectorText = `[${queryEmbedding.join(',')}]`;
-      const similarityExpr = sql<number>`1 - ( ${sql.raw(`embedding <=>`)} ${vectorText}::vector )`;
+      const similarityExpr = sql<number>`1 - ( embedding <=> ${vectorText}::vector )`;
 
       // Roadmap / planning queries expand recall
       const isRoadmapQuery = /roadmap|4[-\s]?year|semester|plan|schedule|sequence|curriculum|pathway/i.test(query);
