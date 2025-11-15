@@ -78,6 +78,13 @@
       "when": 1762859826716,
       "tag": "0010_aberrant_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1763168395906,
+      "tag": "0011_small_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }
