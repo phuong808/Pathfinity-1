@@ -8,6 +8,9 @@ import Conversation from "@/app/components/chat/conversation";
 import PromptBox from "@/app/components/chat/prompt-box";
 
 const models = [
+  { id: "gpt-5.1", name: "GPT-5.1" },
+  { id: "gpt-5.1-mini", name: "GPT-5.1 Mini" },
+  { id: "gpt-4o-mini", name: "GPT-4o Mini" },
   { id: "gpt-4.1-mini", name: "GPT-4.1 Mini" },
 ];
 
@@ -29,12 +32,13 @@ export default function ChatClient({ id, initialMessages, userId }: ChatClientPr
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest({ messages, id }) {
-        return { 
-          body: { 
-            message: messages[messages.length - 1], 
+        return {
+          body: {
+            message: messages[messages.length - 1],
             id: currentChatId,
             userId: userId,
-          } 
+            model,
+          }
         };
       },
     }),

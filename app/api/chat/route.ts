@@ -38,7 +38,7 @@ export type ChatMessage = UIMessage<never, UIDataTypes, ChatTools>;
 
 export async function POST(req: Request) {
     try {
-        const { message, id }: { message?: ChatMessage; id: string } = await req.json();
+        const { message, id, model: requestedModel }: { message?: ChatMessage; id: string; model?: string } = await req.json();
 
         const previousMessages = await loadChat(id);
         const allMessages = message ? [...previousMessages, message] : previousMessages;
@@ -47,8 +47,25 @@ export async function POST(req: Request) {
             tools: tools as any,
         });
 
+        // Allowed models for chat. Default is gpt-5.1-mini unless overridden safely.
+        const ALLOWED_CHAT_MODELS = [
+            'gpt-5.1',
+            'gpt-5.1-mini',
+            'gpt-4o-mini',
+            'gpt-4.1-mini',
+        ];
+
+        const defaultModel = process.env.CHAT_MODEL || 'gpt-5.1-mini';
+
+        function chooseModel(request?: string) {
+            if (request && ALLOWED_CHAT_MODELS.includes(request)) return request;
+            return defaultModel;
+        }
+
+        const selectedModel = chooseModel(requestedModel);
+
         const result = streamText({
-            model: openai('gpt-4o-mini'),
+            model: openai(selectedModel),
             messages: convertToModelMessages(messages),
             tools,
             system: `You are an academic advisor assistant for the University of Hawaii system. Help students find courses, majors, campuses, and degree information.
