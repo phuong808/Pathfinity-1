@@ -87,7 +87,15 @@ function SidebarProvider({
     }
   }, [defaultOpen])
 
-  const [_open, _setOpen] = React.useState<boolean>(() => readSidebarCookie())
+  const [_open, _setOpen] = React.useState<boolean>(defaultOpen)
+  React.useEffect(() => {
+    try {
+      const initial = readSidebarCookie()
+      _setOpen(initial)
+    } catch (e) {
+      // ignore and keep default
+    }
+  }, [])
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
