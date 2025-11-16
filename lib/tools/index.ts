@@ -10,4 +10,5 @@ export { getDegreeProgram } from './get-degree-program';
 export { getPathway } from './get-pathway';
 export { getCareerRecommendations } from './get-career-recommendations';
 export { getMajorRecommendations } from './get-major-recommendations';
+export { getCareerRecommendationsFromMajor } from './get-career-from-major';
 export { saveProfile } from './save-profile';

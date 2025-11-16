@@ -8,18 +8,42 @@ import { upsertUserProfile, getUserProfile } from '@/app/db/actions';
  */
 export const saveProfile = tool({
   description: `Save the user's selected career path (dream job) and major to their profile in the database. 
-  This should ONLY be called after:
-  1. The AI has recommended career paths based on the user's interests, strengths, weaknesses, experience, and job preferences
-  2. The user has selected or confirmed their desired career path
-  3. The AI has recommended majors based on the selected career path
-  4. The user has selected or confirmed their desired major
   
-  Important: This tool saves permanent data - only call it when the user has explicitly confirmed their choices.`,
+  **When to call this tool:**
+  
+  SCENARIO 1 - Fast-Track (User knows both):
+  - User states BOTH career AND major in their message (e.g., "I want to become a doctor with a biology degree")
+  - After verifying the major exists with getDegreeProgram
+  - Save immediately without going through recommendations
+  
+  SCENARIO 2 - Knows Career Only:
+  - User states career but not major
+  - After showing major recommendations with getMajorRecommendations
+  - User selects a major
+  - Save both career and major
+  
+  SCENARIO 3 - Knows Major Only:
+  - User states major but not career
+  - After user clarifies their career goal
+  - Save both career and major
+  
+  SCENARIO 4 - Full Onboarding:
+  - User went through interest collection
+  - AI provided career recommendations
+  - User selected a career
+  - AI provided major recommendations
+  - User selected a major
+  - Save both career and major
+  
+  **Important**: 
+  - This tool saves permanent data - only call when user has confirmed their choices
+  - Both dreamJob and major are optional parameters - you can save just one if needed
+  - Always confirm the save with the user after calling this tool`,
   
   inputSchema: z.object({
     userId: z.string().describe('The user ID from the session'),
-    dreamJob: z.string().optional().describe('The career path/dream job selected by the user. Should match one of the recommended career paths.'),
-    major: z.string().optional().describe('The major selected by the user. Should match one of the recommended majors.'),
+    dreamJob: z.string().optional().describe('The career path/dream job selected or stated by the user (e.g., "Software Engineer", "Doctor", "Teacher"). Can be their own words or from recommendations.'),
+    major: z.string().optional().describe('The major/degree program selected or stated by the user (e.g., "Computer Science - BS", "Biology - BS"). Should match exact program name from getDegreeProgram when possible.'),
   }),
   
   execute: async ({ userId, dreamJob, major }) => {
