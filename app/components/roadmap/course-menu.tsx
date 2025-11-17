@@ -10,12 +10,11 @@ import {
   CAMPUSES,
 } from '@/lib/course-mapper'
 
-export function CourseMenu({ course, pos, onClose }: { course: Course; pos: { x: number; y: number } | null; onClose: () => void }) {
+type Props = { course: Course; pos: { x: number; y: number } | null; onClose: () => void }
+
+const CourseMenu = React.forwardRef<HTMLDivElement, Props>(function CourseMenu({ course, pos, onClose }, ref) {
   if (!course || !pos) return null
 
-  // Try to find detailed course information by scanning campuses and returning
-  // the first match. This allows the menu to work even when a campus isn't
-  // explicitly provided to the roadmap component.
   const { courseDetails, campus } = useMemo(() => {
     for (const c of CAMPUSES) {
       const details = getCourseDetails(course.name, c.id)
@@ -26,6 +25,7 @@ export function CourseMenu({ course, pos, onClose }: { course: Course; pos: { x:
 
   return (
     <div
+      ref={ref}
       className="absolute z-50"
       style={{ left: pos.x, top: pos.y, transform: "translateY(8px)" }}
       onMouseDown={(e) => e.stopPropagation()}
@@ -37,7 +37,7 @@ export function CourseMenu({ course, pos, onClose }: { course: Course; pos: { x:
           </div>
           <button
             aria-label="Close"
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation()
               onClose()
@@ -47,7 +47,7 @@ export function CourseMenu({ course, pos, onClose }: { course: Course; pos: { x:
           </button>
         </div>
 
-        {/* If we found course details, show richer information */}
+        
         {courseDetails ? (
           <div className="mt-3 text-sm text-gray-700 space-y-2">
             <div className="font-semibold text-gray-800">{courseDetails.course_title}</div>
@@ -59,7 +59,7 @@ export function CourseMenu({ course, pos, onClose }: { course: Course; pos: { x:
             </div>
 
             {courseDetails.metadata && (
-              <div className="mt-2 text-xs text-gray-700 bg-slate-100 p-2 rounded">
+              <div className="mt-2 text-xs text-gray-700 bg-gray-50 p-2 rounded border-l-4 border-slate-200">
                 <div className="font-medium">Prerequisites</div>
                 <div className="text-sm">{extractPrerequisites(courseDetails.metadata)}</div>
 
@@ -80,11 +80,11 @@ export function CourseMenu({ course, pos, onClose }: { course: Course; pos: { x:
             </div>
           </div>
         ) : (
-          <div className="mt-3 text-sm text-gray-700">Details about this course are not available.</div>
+          <div className="mt-3 text-sm text-gray-700">More details about this course are not available in the catalog.</div>
         )}
       </div>
     </div>
   )
-}
+})
 
 export default CourseMenu

@@ -8,7 +8,7 @@ import { Spinner } from "@/app/components/ui/spinner"
 
 import type { Course, Program } from "./types"
 import buildNodesAndEdges from "./buildNodesAndEdges"
-import CourseMenu from "./CourseMenu"
+import CourseMenu from "./course-menu"
 
 export default function CollegeRoadmap({ program, loading, error }: { program?: Program | null; loading?: boolean; error?: string | null }) {
   const [menuCourse, setMenuCourse] = useState<Course | null>(null)
@@ -17,10 +17,17 @@ export default function CollegeRoadmap({ program, loading, error }: { program?: 
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   const handleCourseClick = useCallback((course: Course, nodeId: string, ev: React.MouseEvent) => {
-    // open menu anchored to the clicked node's DOM rect (falls back to click coords)
+    if (menuNodeId === nodeId) {
+      setMenuCourse(null)
+      setMenuNodeId(null)
+      setMenuPos(null)
+      return
+    }
+    
     setMenuCourse(course)
     setMenuNodeId(nodeId)
-    // prefer selecting the React Flow node element specifically
+    
+    
     const nodeEl = document.querySelector(`.react-flow__node[data-id="${nodeId}"]`) as HTMLElement | null
     const containerEl = document.querySelector(".roadmap-canvas") as HTMLElement | null
     if (nodeEl) {
@@ -28,15 +35,15 @@ export default function CollegeRoadmap({ program, loading, error }: { program?: 
       const c = containerEl?.getBoundingClientRect()
       const left = c ? Math.round(r.left - c.left) : Math.round(r.left)
       const top = c ? Math.round(r.bottom - c.top + 8) : Math.round(r.bottom + 8)
-      // align menu left edge with node left edge relative to the roadmap container
+      
       setMenuPos({ x: left, y: top })
     } else {
       const c = containerEl?.getBoundingClientRect()
       setMenuPos({ x: c ? Math.round(ev.clientX - c.left) : ev.clientX, y: c ? Math.round(ev.clientY - c.top) : ev.clientY })
     }
-  }, [])
+  }, [menuNodeId])
 
-  // while a node is selected, keep the menu positioned at the node by polling its DOM rect
+  
   useEffect(() => {
     let raf = 0
     function tick() {
@@ -48,7 +55,7 @@ export default function CollegeRoadmap({ program, loading, error }: { program?: 
         const c = containerEl?.getBoundingClientRect()
         const left = c ? Math.round(r.left - c.left) : Math.round(r.left)
         const top = c ? Math.round(r.bottom - c.top + 8) : Math.round(r.bottom + 8)
-        // keep menu left-aligned with node left edge while following transforms
+        
         setMenuPos({ x: left, y: top })
         raf = requestAnimationFrame(tick)
       }
@@ -58,8 +65,7 @@ export default function CollegeRoadmap({ program, loading, error }: { program?: 
       if (raf) cancelAnimationFrame(raf)
     }
   }, [menuNodeId])
-
-  // close when clicking outside the menu or node, and handle Escape key
+  
   useEffect(() => {
     function onDocMouse(e: MouseEvent) {
       const target = e.target as any
@@ -121,7 +127,7 @@ export default function CollegeRoadmap({ program, loading, error }: { program?: 
       )}
 
       {/* course detail menu (positioned at click) */}
-      {menuCourse && menuPos && <CourseMenu course={menuCourse} pos={menuPos} onClose={() => setMenuCourse(null)} />}
+  {menuCourse && menuPos && <CourseMenu ref={menuRef} course={menuCourse} pos={menuPos} onClose={() => setMenuCourse(null)} />}
     </div>
   )
 }
