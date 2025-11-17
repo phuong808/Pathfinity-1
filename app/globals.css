@@ -149,3 +149,11 @@
   width: 0;
   height: 0;
 }
+.react-flow__handle,
+.xyflow__handle {
+  display: none !important;
+}
+
+.roadmap-canvas .react-flow__attribution {
+  display: none !important;
+}

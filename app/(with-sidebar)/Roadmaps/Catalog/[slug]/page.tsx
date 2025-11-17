@@ -2,10 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Spinner } from "@/app/components/ui/spinner"
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import { ArrowLeft } from "lucide-react"
+import CollegeRoadmap from "@/app/components/roadmap/college-roadmap"
 
 interface PathwayData {
     program_name: string
@@ -23,16 +22,19 @@ export default function RoadmapCatalogDetailPage() {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        async function fetchPathwayData() {
-            try {
-                // Fetch all pathways
-                const response = await fetch("/api/pathways")
-                if (!response.ok) {
-                    throw new Error("Failed to fetch pathways")
-                }
-                const pathways = await response.json()
+        const controller = new AbortController()
+        let mounted = true
 
-                // Find the pathway that matches the slug
+        async function fetchPathwayData() {
+            setLoading(true)
+            try {
+                const res = await fetch('/api/pathways', { signal: controller.signal })
+                if (!res.ok) {
+                    const text = await res.text().catch(() => '')
+                    throw new Error(text || 'Failed to fetch pathways')
+                }
+
+                const pathways = await res.json()
                 const pathway = pathways.find((p: any) => {
                     const pathwaySlug = p.programName
                         .toLowerCase()
@@ -44,74 +46,73 @@ export default function RoadmapCatalogDetailPage() {
                 })
 
                 if (!pathway) {
-                    throw new Error("Pathway not found")
+                    if (!mounted) return
+                    setPathwayData(null)
+                    setError('Pathway not found')
+                    return
                 }
 
+                if (!mounted) return
                 setPathwayData(pathway.pathwayData)
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "An error occurred")
+                setError(null)
+            } catch (err: any) {
+                // ignore abort errors
+                if (err?.name === 'AbortError') return
+                if (!mounted) return
+                setPathwayData(null)
+                setError(err?.message ?? 'An error occurred')
             } finally {
+                if (!mounted) return
                 setLoading(false)
             }
         }
 
-        if (slug) {
-            fetchPathwayData()
+        if (slug) fetchPathwayData()
+
+        return () => {
+            mounted = false
+            controller.abort()
         }
     }, [slug])
 
-    if (loading) {
-        return (
-            <div className="container mx-auto py-8 px-4 max-w-7xl">
-                <div className="flex flex-col items-center justify-center py-12">
-                    <Spinner className="w-10 h-10" />
-                    <div className="text-gray-500 pt-10">Loading roadmap...</div>
-                </div>
-            </div>
-        )
-    }
-
-    if (error || !pathwayData) {
-        return (
-            <div className="container mx-auto py-8 px-4 max-w-7xl">
-                <div className="flex items-center justify-center py-12">
-                    <div className="text-red-500">Error: {error || "Pathway not found"}</div>
-                </div>
-            </div>
-        )
-    }
-
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl">
-            {/* Back Button - matches Profile page layout */}
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.back()}
-                className="mb-4 text-gray-600 hover:text-gray-900"
-            >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Roadmaps
-            </Button>
-            
-            <Card className="w-full">
-                <CardHeader>
-                    <CardTitle>Pathway Data</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {pathwayData ? (
-                        <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-[600px]">
-                            <pre className="text-xs text-gray-800 whitespace-pre-wrap">
-                                {JSON.stringify(pathwayData, null, 2)}
-                            </pre>
-                        </div>
-                    ) : (
-                        <div className="text-center py-8 text-gray-500">
-                            No pathway data available for this catalog entry yet.
-                        </div>
+        <div className="min-h-screen w-screen relative bg-white">
+            {/* Back Button - kept and positioned at top-left */}
+            <div className="absolute top-4 left-16 md:left-4 z-50">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.back()}
+                    className="text-gray-600 hover:text-gray-900"
+                >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Roadmaps
+                </Button>
+            </div>
+
+            <main className="w-full h-screen">
+                <div className="w-full h-full">
+                    {pathwayData && (
+                        <header className="max-w-6xl mx-auto px-4 text-center pt-20 md:pt-16 lg:pt-6 pb-6">
+                            <h1 className="text-lg md:text-2xl font-semibold text-gray-900">
+                                {pathwayData.program_name}
+                            </h1>
+                            <div className="mt-2 text-sm md:text-base text-gray-600">
+                                {pathwayData.total_credits != null && (
+                                    <span className="mr-2">{pathwayData.total_credits} Total Credits</span>
+                                )}
+                                {pathwayData.institution && (
+                                    <span className="mx-2">•</span>
+                                )}
+                                {pathwayData.institution && <span>{pathwayData.institution}</span>}
+                            </div>
+                        </header>
                     )}
-                </CardContent>
-            </Card>
+
+                    <CollegeRoadmap program={pathwayData} loading={loading} error={error} />
+                </div>
+            </main>
         </div>
     )
 }
+ 
