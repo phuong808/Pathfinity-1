@@ -14,7 +14,6 @@
 
 import { db } from "../../app/db/index.js";
 import { embedding, source, campuses } from "../../app/db/schema.js"; // your schema tables
-import { eq } from "drizzle-orm";
 import { embed } from "../../app/db/actions.js"; // your gpt-4.1-mini embedding helper
 import fs from "fs";
 import crypto from "crypto";

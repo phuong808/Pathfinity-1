@@ -190,4 +190,5 @@ export const pathway = pgTable("pathways", {
 export const campuses = pgTable("campuses", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+
 });
