@@ -186,3 +186,8 @@ export const pathway = pgTable("pathways", {
 }, (table) => [
   index("pathway_program_idx").on(table.programName),
 ]);
+
+export const campuses = pgTable("campuses", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+});

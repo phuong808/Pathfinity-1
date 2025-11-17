@@ -224,3 +224,32 @@ export async function deleteMessage(messageId: string, chatId: string): Promise<
     .delete(message)
     .where(eq(message.chatId, chatId));
 }
+
+// ------------------------------------------------------------
+// Embedding Helper (gpt-4.1-mini embedding model)
+// ------------------------------------------------------------
+
+import OpenAI from "openai";
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+export async function embed(text: string): Promise<number[]> {
+  const response = await client.embeddings.create({
+    model: "text-embedding-3-small",
+    input: text,
+  });
+
+  return response.data[0].embedding as number[];
+}
+
+async function ensureCampus(id: string, name: string) {
+  const exists = await db.query.campuses.findFirst({
+    where: (c, { eq }) => eq(c.id, id),
+  });
+
+  if (!exists) {
+    await db.insert(campuses).values({
+      id,
+      name,
+    });
+  }
+}
