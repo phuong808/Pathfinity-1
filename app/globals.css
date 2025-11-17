@@ -157,6 +157,7 @@
 
 .roadmap-canvas .react-flow__attribution {
   display: none !important;
+}
 
 /* Hide scrollbar for nested elements too */
 .scrollbar-hide * {
