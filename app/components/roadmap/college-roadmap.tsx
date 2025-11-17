@@ -7,7 +7,7 @@ import { Position } from "@xyflow/react"
 import { Spinner } from "@/app/components/ui/spinner"
 
 import type { Course, Program } from "./types"
-import buildNodesAndEdges from "./buildNodesAndEdges"
+import buildNodesAndEdges from "./build-nodes-and-edges"
 import CourseMenu from "./course-menu"
 
 export default function CollegeRoadmap({ program, loading, error }: { program?: Program | null; loading?: boolean; error?: string | null }) {

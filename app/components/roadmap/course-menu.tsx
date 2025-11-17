@@ -34,6 +34,20 @@ const CourseMenu = React.forwardRef<HTMLDivElement, Props>(function CourseMenu({
         <div className="flex justify-between items-start">
           <div>
             <div className="font-semibold">{course.name}</div>
+            {Array.isArray((course as any).isRelated) && (course as any).isRelated.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(course as any).isRelated.map((r: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="text-xs px-2 py-1 rounded bg-emerald-50 border border-emerald-200 text-emerald-800"
+                    title={`${r.type}: ${r.value}`}
+                  >
+                    <span className="font-medium capitalize mr-1">{r.type}:</span>
+                    <span className="truncate">{r.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <button
             aria-label="Close"
@@ -59,7 +73,7 @@ const CourseMenu = React.forwardRef<HTMLDivElement, Props>(function CourseMenu({
             </div>
 
             {courseDetails.metadata && (
-              <div className="mt-2 text-xs text-gray-700 bg-gray-50 p-2 rounded border-l-4 border-slate-200">
+              <div className="mt-2 text-xs text-gray-700 bg-gray-50 p-2 rounded">
                 <div className="font-medium">Prerequisites</div>
                 <div className="text-sm">{extractPrerequisites(courseDetails.metadata)}</div>
 
@@ -80,7 +94,7 @@ const CourseMenu = React.forwardRef<HTMLDivElement, Props>(function CourseMenu({
             </div>
           </div>
         ) : (
-          <div className="mt-3 text-sm text-gray-700">More details about this course are not available in the catalog.</div>
+          <div className="mt-3 text-sm text-gray-700">More details about this course is currently unavailable in the catalog.</div>
         )}
       </div>
     </div>

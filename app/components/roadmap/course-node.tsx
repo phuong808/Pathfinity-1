@@ -3,7 +3,32 @@
 import React from "react"
 import type { Course } from "./types"
 
-export function CourseLabelButton({ course, id, onCourseClick }: { course: Course; id: string; onCourseClick?: (course: Course, nodeId: string, ev: React.MouseEvent) => void }) {
+export function CourseLabelButton({
+  course,
+  id,
+  onCourseClick,
+  showMenu = true,
+}: {
+  course: Course
+  id: string
+  onCourseClick?: (course: Course, nodeId: string, ev: React.MouseEvent) => void
+  showMenu?: boolean
+}) {
+  if (!showMenu) {
+    return (
+      <div
+        onMouseDown={(e) => e.stopPropagation()}
+        className={
+          "w-full h-full flex items-center justify-center rounded text-center"
+        }
+        style={{ border: "none", background: "transparent", pointerEvents: "none" }}
+        aria-hidden
+      >
+        <span className="truncate">{course.name}</span>
+      </div>
+    )
+  }
+
   return (
     <button
       onClick={(e) => {

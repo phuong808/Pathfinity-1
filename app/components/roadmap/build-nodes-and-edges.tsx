@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import type { Node, Edge } from "@xyflow/react"
+import type { Node } from "@xyflow/react"
 import { Position } from "@xyflow/react"
 import type { Course, Program } from "./types"
 import { NODE_WIDTH, NODE_HEIGHT, COLUMN_GAP, ROW_GAP } from "./types"
@@ -17,7 +17,6 @@ export function buildNodesAndEdges(
     return { nodes: [], edges: [] }
   }
   const nodes: Node[] = []
-  const edges: Edge[] = []
 
   let semIndex = 0
   const semesterCourseIds: string[][] = []
@@ -34,7 +33,10 @@ export function buildNodesAndEdges(
     milestoneCount?: number
     activities?: string[]
     milestones?: string[]
+    credits?: number
   }[] = []
+
+  const hasCareer = typeof (program as any).career_goal === "string" && (program as any).career_goal.trim().length > 0
 
   program.years.forEach((year) => {
     year.semesters.forEach((semester) => {
@@ -53,6 +55,15 @@ export function buildNodesAndEdges(
         y,
         semesterName: semester.semester_name,
         yearNumber: year.year_number,
+        credits:
+          typeof (semester as any).credits === "number"
+            ? (semester as any).credits
+            : Array.isArray((semester as any).courses)
+            ? (semester as any).courses.reduce(
+                (acc: number, c: any) => acc + (typeof c?.credits === "number" ? c.credits : 0),
+                0
+              )
+            : 0,
         activityCount: Array.isArray((semester as any).activities)
           ? (semester as any).activities.length
           : 0,
@@ -154,6 +165,7 @@ export function buildNodesAndEdges(
               top: `calc(100% + 8px)`,
               transform: "translateX(-50%)",
               pointerEvents: open ? "auto" : "none",
+              zIndex: open ? 99999 : 0,
             }}
           >
             <div
@@ -185,7 +197,7 @@ export function buildNodesAndEdges(
                   }ms`,
                   transform: open ? `translateY(6px) scale(1)` : "translateY(0) scale(0.92)",
                   opacity: open ? 1 : 0,
-                  zIndex: 40,
+                  zIndex: open ? 99999 : 0,
                   cursor: "default",
                 }
 
@@ -206,7 +218,7 @@ export function buildNodesAndEdges(
 
   semesterMeta.forEach((s) => {
     const paddingX = 24
-    const paddingY = 28
+  const paddingY = 36
     const width = NODE_WIDTH + paddingX * 2
     const height = Math.max(s.courseCount * ROW_GAP + ROW_GAP, NODE_HEIGHT) + paddingY * 2
 
@@ -234,16 +246,23 @@ export function buildNodesAndEdges(
     else if (rawName.includes("spring")) semLabel = "Spring Semester"
     else if (rawName.includes("summer")) semLabel = "Summer Semester"
 
-    const semLabelWidth = 150
-    const semLabelHeight = 10
-    const semLabelX = s.x - paddingX + (width - semLabelWidth) / 2
-    const semLabelY = s.y - semLabelHeight
+  const semLabelWidth = 150
+  const semLabelHeight = 28
+  const semLabelX = s.x - paddingX + (width - semLabelWidth) / 2
+  const semLabelY = s.y - semLabelHeight + 7.5
 
     semesterLabelNodes.push({
       id: `${s.id}-sem-label`,
       type: "default",
       data: {
-        label: <SemesterLabel label={semLabel} />,
+        label: (
+          <div style={{ pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <SemesterLabel label={semLabel} />
+            {typeof s.credits === "number" && (
+              <div className="text-xs text-gray-600 mt-1">{s.credits} credits</div>
+            )}
+          </div>
+        ),
       },
       position: { x: semLabelX, y: semLabelY },
       selectable: false,
@@ -274,6 +293,8 @@ export function buildNodesAndEdges(
         thisSemesterIds.push(id)
 
         const label = <CourseLabelButton course={course} id={id} onCourseClick={onCourseClick} />
+        const related = Array.isArray((course as any).isRelated) && (course as any).isRelated.length > 0
+        const borderStyle = related ? "2px solid green" : "1px solid var(--muted)"
 
         courseNodes.push({
           id,
@@ -291,7 +312,7 @@ export function buildNodesAndEdges(
             padding: 0,
             borderRadius: 8,
             background: "var(--background)",
-            border: "1px solid var(--muted)",
+            border: borderStyle,
             boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
             display: "flex",
             alignItems: "center",
@@ -304,6 +325,39 @@ export function buildNodesAndEdges(
       semIndex += 1
     })
   })
+
+  if (hasCareer) {
+    const careerId = `postgrad-career`
+    const careerCourse: any = { name: (program as any).career_goal || "Career", credits: 0, isRelated: [{ type: "career", value: (program as any).career_goal || "Career" }] }
+
+    // place the career node in the next semester column (year + 1 style)
+    courseNodes.push({
+      id: careerId,
+      type: "default",
+      data: { label: <CourseLabelButton course={careerCourse} id={careerId} onCourseClick={onCourseClick} showMenu={false} />, course: careerCourse },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      position: {
+        x: semIndex * COLUMN_GAP,
+        y: 0,
+      },
+      style: {
+        width: NODE_WIDTH,
+        height: NODE_HEIGHT,
+        padding: 0,
+        borderRadius: 8,
+        background: "var(--background)",
+        border: "1px solid var(--muted)",
+        boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      },
+    })
+
+    // treat it as its own semester column so edges connect into it
+    semesterCourseIds.push([careerId])
+  }
 
   // Create compact activity/milestone badge nodes centered under each semester group
   const badgeNodes: Node[] = []
@@ -409,35 +463,10 @@ export function buildNodesAndEdges(
 
   const yearLabelNodes: Node[] = []
 
-  program.years.forEach((year, yIdx) => {
-    const semsForYear = semesterMeta.filter((m) => m.yearNumber === year.year_number)
-    if (semsForYear.length === 0) return
-
-    const startIndex = Math.min(...semsForYear.map((m) => m.semIndex))
-    const endIndex = Math.max(...semsForYear.map((m) => m.semIndex))
-
-    const paddingX = 20
-    const paddingY = 30
-
-    const x = startIndex * COLUMN_GAP - paddingX
-    const width = (endIndex - startIndex) * COLUMN_GAP + NODE_WIDTH + paddingX * 2
-
-    let maxCourses = 1
-    maxCourses = Math.max(...semsForYear.map((m) => m.courseCount), maxCourses)
-
-    const height = Math.max(maxCourses * ROW_GAP + ROW_GAP, NODE_HEIGHT) + paddingY
-
-  const yearCount = program.years.length
-  const factor = yearCount > 1 ? yIdx / (yearCount - 1) : 0
-
-  // Gradient control points (green palette): pale mint -> mid green -> deep green
-  const startCP = { h: 140, s: 95, l: 92 }
-  const midCP = { h: 150, s: 78, l: 80 }
-  const endCP = { h: 140, s: 66, l: 56 }
+  const yearCount = program.years.length + (hasCareer ? 1 : 0)
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t
   const lerpHue = (a: number, b: number, t: number) => {
-    // shortest-path interpolation around the color wheel
     const diff = ((((b - a) % 360) + 540) % 360) - 180
     return (a + diff * t + 360) % 360
   }
@@ -447,6 +476,31 @@ export function buildNodesAndEdges(
     s: Math.round(lerp(a.s, b.s, t)),
     l: Math.round(lerp(a.l, b.l, t)),
   })
+
+  program.years.forEach((year, yIdx) => {
+    const semsForYear = semesterMeta.filter((m) => m.yearNumber === year.year_number)
+    if (semsForYear.length === 0) return
+
+    const startIndex = Math.min(...semsForYear.map((m) => m.semIndex))
+    const endIndex = Math.max(...semsForYear.map((m) => m.semIndex))
+
+  const paddingX = 24
+  const paddingY = 48
+
+    const x = startIndex * COLUMN_GAP - paddingX
+    const width = (endIndex - startIndex) * COLUMN_GAP + NODE_WIDTH + paddingX * 2
+
+    let maxCourses = 1
+    maxCourses = Math.max(...semsForYear.map((m) => m.courseCount), maxCourses)
+
+    const height = Math.max(maxCourses * ROW_GAP + ROW_GAP, NODE_HEIGHT) + paddingY
+
+  const factor = yearCount > 1 ? yIdx / (yearCount - 1) : 0
+
+  // Gradient control points (green palette): pale mint -> mid green -> deep green
+  const startCP = { h: 140, s: 95, l: 92 }
+  const midCP = { h: 150, s: 78, l: 80 }
+  const endCP = { h: 140, s: 66, l: 56 }
 
   const cp = factor <= 0.5 ? interp(startCP, midCP, factor * 2) : interp(midCP, endCP, (factor - 0.5) * 2)
 
@@ -475,12 +529,27 @@ export function buildNodesAndEdges(
     const labelWidth = 180
     const labelHeight = 0
     const labelX = x + (width - labelWidth) / 2
-    const labelY = -paddingY - 6 - labelHeight - 24
+  const labelY = -paddingY - 6 - labelHeight - 42
+
+    const yearCredits = year.semesters.reduce((acc, sem) => {
+      if (typeof (sem as any).credits === "number") return acc + (sem as any).credits
+      if (Array.isArray((sem as any).courses)) return (
+        acc + (sem as any).courses.reduce((a: number, c: any) => a + (typeof c?.credits === "number" ? c.credits : 0), 0)
+      )
+      return acc
+    }, 0)
 
     yearLabelNodes.push({
       id: `year-${year.year_number}-label`,
       type: "default",
-      data: { label: <YearLabel yearNumber={year.year_number} /> },
+      data: {
+        label: (
+          <div style={{ pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <YearLabel yearNumber={year.year_number} />
+            <div className="text-sm text-gray-600 mt-1">{yearCredits} credits</div>
+          </div>
+        ),
+      },
       position: { x: labelX, y: labelY },
       selectable: false,
       draggable: false,
@@ -498,6 +567,82 @@ export function buildNodesAndEdges(
     })
   })
 
+  // Add Post Graduation year-group and label if career exists
+  if (hasCareer) {
+    const postIndex = program.years.length
+    const startIndex = semIndex
+    const endIndex = semIndex
+
+    const paddingX = 24
+    const paddingY = 48
+
+    const x = startIndex * COLUMN_GAP - paddingX
+    const width = NODE_WIDTH + paddingX * 2
+
+    const maxCourses = 1
+    const height = Math.max(maxCourses * ROW_GAP + ROW_GAP, NODE_HEIGHT) + paddingY
+
+    const factor = yearCount > 1 ? postIndex / (yearCount - 1) : 0
+
+    // Gradient control points (same as other years)
+    const startCP = { h: 140, s: 95, l: 92 }
+    const midCP = { h: 150, s: 78, l: 80 }
+    const endCP = { h: 140, s: 66, l: 56 }
+    const cp = factor <= 0.5 ? interp(startCP, midCP, factor * 2) : interp(midCP, endCP, (factor - 0.5) * 2)
+    const topColor = `hsl(${cp.h} ${cp.s}% ${cp.l}%)`
+    const bottomColor = `hsl(${cp.h} ${Math.max(40, cp.s - 6)}% ${Math.max(30, cp.l - 8)}%)`
+    const borderColor = `hsl(${cp.h} ${Math.max(30, cp.s - 10)}% ${Math.max(18, cp.l - 18)}%)`
+
+    yearGroupNodes.push({
+      id: `year-postgrad-group`,
+      type: "default",
+      data: { label: null },
+      position: { x, y: -paddingY - 6 },
+      selectable: false,
+      draggable: false,
+      connectable: false,
+      style: {
+        width,
+        height,
+        borderRadius: 12,
+        background: `linear-gradient(180deg, ${topColor} 0%, ${bottomColor} 100%)`,
+        border: `1px solid ${borderColor}`,
+        pointerEvents: "none",
+      },
+    })
+
+    const labelWidth = 180
+    const labelHeight = 0
+    const labelX = x + (width - labelWidth) / 2
+    const labelY = -paddingY - 6 - labelHeight - 42
+
+    yearLabelNodes.push({
+      id: `year-postgrad-label`,
+      type: "default",
+      data: {
+        label: (
+          <div style={{ pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div className="text-2xl font-bold">Post Graduation</div>
+          </div>
+        ),
+      },
+      position: { x: labelX, y: labelY },
+      selectable: false,
+      draggable: false,
+      connectable: false,
+      style: {
+        width: labelWidth,
+        height: labelHeight,
+        background: "transparent",
+        border: "none",
+        pointerEvents: "none",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      },
+    })
+  }
+
   nodes.push(
     ...yearGroupNodes,
     ...yearLabelNodes,
@@ -507,24 +652,8 @@ export function buildNodesAndEdges(
     ...badgeNodes
   )
 
-  for (let i = 0; i < semesterCourseIds.length - 1; i++) {
-    const from = semesterCourseIds[i]
-    const to = semesterCourseIds[i + 1]
-    from.forEach((fid) =>
-      to.forEach((tid) =>
-        edges.push({
-          id: `e-${fid}-${tid}`,
-          source: fid,
-          target: tid,
-          animated: false,
-          markerEnd: { type: "arrow", color: "var(--muted)" },
-          style: { stroke: "var(--muted)" },
-        })
-      )
-    )
-  }
 
-  return { nodes, edges }
+  return { nodes, edges: [] }
 }
 
 export default buildNodesAndEdges
