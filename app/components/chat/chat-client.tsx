@@ -113,7 +113,7 @@ export default function ChatClient({ id, initialMessages, userId }: ChatClientPr
           <Conversation 
             messages={messages} 
             status={status} 
-            className="flex-1 min-h-0" 
+            className="flex-1 min-h-0 scrollbar-hide" 
             onSubmit={handleSubmit}
           />
           

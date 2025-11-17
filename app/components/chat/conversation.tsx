@@ -153,7 +153,7 @@ export function Conversation({ messages, status, className, onSubmit }: Props) {
               <div className="space-y-6 text-base max-w-3xl w-full">
                 <div className="space-y-3">
                   <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                    Welcome! I&apos;m so glad you&apos;re here. 🌟
+                    Welcome! I&apos;m glad you&apos;re here. 🌟
                   </h1>
                   <p className="text-lg text-muted-foreground leading-relaxed">
                     I&apos;m Pathfinity, your personal career exploration and academic pathway guide. Whether you&apos;re just starting to think about your future, reconsidering your current direction, or planning a career pivot, I&apos;m here to help you confidently move forward.

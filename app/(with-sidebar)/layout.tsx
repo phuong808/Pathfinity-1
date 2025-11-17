@@ -16,7 +16,7 @@ export default async function WithSidebarLayout({
   return (
     <SidebarProvider>
       <ChatSidebar />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden scrollbar-hide">
         {children}
       </main>
     </SidebarProvider>
