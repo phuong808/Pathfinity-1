@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { InteractiveChatbox } from '@/app/components/ui/interactive-chatbox';
 import SampleConversation from '@/app/components/chat/sample-conversation';
+import AdvisorCarousel from "@/app/components/AdvisorCarousel";
 
 // Feature card data 
 const FEATURES = [
@@ -200,9 +201,9 @@ export default async function Home() {
         </div>
 
         {/* Agents image + support block */}
-        <div className="max-w-7xl mx-auto mb-72">
+        <div className="max-w-7xl mx-auto mb-72 relative">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-end">
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 relative">
               <Image
                 src="/agents-bg-img.webp"
                 alt="Advisors and agents"
@@ -211,6 +212,8 @@ export default async function Home() {
                 className="w-full h-[640px] object-cover rounded-xl shadow-2xl"
                 priority={false}
               />
+              {/* Advisor Carousel Overlay */}
+              <AdvisorCarousel />
             </div>
 
             <div className="lg:col-span-1 flex items-end">

@@ -23,6 +23,7 @@ type Props = {
   messages: ChatMessage[]
   status: string
   className?: string
+  onSubmit?: (message: { text: string }) => void
 }
 
 function isTextPart(p: ChatPart): p is { type: "text"; text: string } {
@@ -87,7 +88,7 @@ function PathwayJsonActions({ text, messageRole, onOpen }: { text: string; messa
   );
 }
 
-export function Conversation({ messages, status, className }: Props) {
+export function Conversation({ messages, status, className, onSubmit }: Props) {
   const router = useRouter();
   const { speak, stop } = useTTS();
 
@@ -147,10 +148,89 @@ export function Conversation({ messages, status, className }: Props) {
       <ConversationContent>
         {messages.length === 0 ? (
             <ConversationEmptyState
-                title="Welcome to Pathfinity!"
-                description="Are you exploring, deciding a major, or preparing for a career? I'll help you find the best pathway to reach your goals."
-                className="text-left"
-            />
+                className="text-left items-start justify-start pt-8"
+            >
+              <div className="space-y-6 text-base max-w-3xl w-full">
+                <div className="space-y-3">
+                  <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                    Welcome! I&apos;m glad you&apos;re here. 🌟
+                  </h1>
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    I&apos;m Pathfinity, your personal career exploration and academic pathway guide. Whether you&apos;re just starting to think about your future, reconsidering your current direction, or planning a career pivot, I&apos;m here to help you confidently move forward.
+                  </p>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-6 space-y-3">
+                  <p className="font-semibold text-foreground">With me, you can:</p>
+                  <div className="space-y-2">
+                    <p className="flex items-start gap-2 text-muted-foreground">
+                      <span className="text-xl">✨</span>
+                      <span>Explore potential career paths that match your goals</span>
+                    </p>
+                    <p className="flex items-start gap-2 text-muted-foreground">
+                      <span className="text-xl">✨</span>
+                      <span>Discover relevant majors, programs, and training options</span>
+                    </p>
+                    <p className="flex items-start gap-2 text-muted-foreground">
+                      <span className="text-xl">✨</span>
+                      <span>Learn about courses and skills needed for your dream path</span>
+                    </p>
+                    <p className="flex items-start gap-2 text-muted-foreground">
+                      <span className="text-xl">✨</span>
+                      <span>Get personalized guidance — not generic advice</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <p className="text-muted-foreground leading-relaxed">
+                    Before we begin, I&apos;d love to understand where you are in your journey so I can tailor the experience for you. <span className="font-medium text-foreground">Which one best describes you right now?</span>
+                  </p>
+                  
+                  <div className="space-y-2 bg-card border rounded-lg p-4">
+                    <button 
+                      className="w-full text-left p-3 rounded-md hover:bg-accent transition-colors group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => onSubmit?.({ text: "1" })}
+                      disabled={status === "streaming" || status === "submitted"}
+                    >
+                      <p className="flex items-start gap-3">
+                        <span className="text-xl flex-shrink-0">1️⃣</span>
+                        <span className="text-muted-foreground group-hover:text-foreground">I&apos;m a middle or high school student exploring possible majors or careers</span>
+                      </p>
+                    </button>
+                    <button 
+                      className="w-full text-left p-3 rounded-md hover:bg-accent transition-colors group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => onSubmit?.({ text: "2" })}
+                      disabled={status === "streaming" || status === "submitted"}
+                    >
+                      <p className="flex items-start gap-3">
+                        <span className="text-xl flex-shrink-0">2️⃣</span>
+                        <span className="text-muted-foreground group-hover:text-foreground">I&apos;m currently in college and may be reconsidering my major</span>
+                      </p>
+                    </button>
+                    <button 
+                      className="w-full text-left p-3 rounded-md hover:bg-accent transition-colors group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => onSubmit?.({ text: "3" })}
+                      disabled={status === "streaming" || status === "submitted"}
+                    >
+                      <p className="flex items-start gap-3">
+                        <span className="text-xl flex-shrink-0">3️⃣</span>
+                        <span className="text-muted-foreground group-hover:text-foreground">I&apos;m already working and interested in career pivoting or upskilling</span>
+                      </p>
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <p className="text-sm text-muted-foreground italic">
+                    Just reply with 1, 2, or 3 — or feel free to describe your situation in your own words.
+                  </p>
+                  <p className="text-lg font-semibold text-foreground mt-3 flex items-center gap-2">
+                    Ready when you are! <span className="text-2xl">🚀</span>
+                  </p>
+                </div>
+              </div>
+            </ConversationEmptyState>
         ) : (
           messages.map((message) => (
             <div key={message.id}>
