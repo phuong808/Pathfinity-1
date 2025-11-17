@@ -107,20 +107,29 @@ export default function ChatClient({ id, initialMessages, userId }: ChatClientPr
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 relative size-full h-[calc(100vh-4rem)]">
-      <div className="flex flex-col h-full">
-        <Conversation messages={messages} status={status} className="h-full" />
-
-        <PromptBox
-          input={input}
-          setInput={setInput}
-          onSubmit={handleSubmit}
-          models={models}
-          model={model}
-          setModel={setModel}
-          status={status}
-          className="mt-4"
-        />
+    <div className="relative size-full h-[calc(100vh-4rem)] flex flex-col">
+      <div className="flex-1 overflow-hidden">
+        <div className="max-w-5xl mx-auto h-full flex flex-col px-4 sm:px-6 lg:px-8">
+          <Conversation 
+            messages={messages} 
+            status={status} 
+            className="flex-1 min-h-0" 
+            onSubmit={handleSubmit}
+          />
+          
+          <div className="sticky bottom-0 pt-4 pb-6 bg-gradient-to-t from-background via-background to-transparent">
+            <PromptBox
+              input={input}
+              setInput={setInput}
+              onSubmit={handleSubmit}
+              models={models}
+              model={model}
+              setModel={setModel}
+              status={status}
+              className="shadow-lg"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
